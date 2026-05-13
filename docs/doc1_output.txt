@@ -1,0 +1,772 @@
+OHADY
+Outil intégré de la Direction Financière et Comptable
+CAHIER DES CHARGES
+Technique et Fonctionnel
+Version
+0.2 — Préliminaire
+Date
+Mai 2026
+Rédaction
+H&C Group / Hermann CAKPO
+Architecture
+Marie Reine CAKPO
+Développement
+Wilfred TCHAPDA
+Statut
+En attente de validation
+Diffusion
+Confidentiel — Équipe projet
+Table des matières
+1. Vision & Positionnement
+1.1 Le problème
+Dans les 17 pays de l’espace OHADA, les directions financières utilisent un assemblage d’outils fragmentés : Sage 100 pour la comptabilité, Excel pour le budget et la modélisation, Power BI pour les tableaux de bord, WhatsApp pour les relances clients, et le cahier du comptable pour le suivi des avances. Chaque outil fonctionne en silo. Les données sont ressaisies d’un outil à l’autre. Le comptable passe 60 à 70% de son temps à retaper des informations qui existent déjà quelque part.
+Sage a été conçu pour la France. Il ne connaît pas nativement le SYSCOHADA révisé. Il ne gère pas le mobile money (Wave, Orange Money). Il ne génère pas les liasses fiscales au format des DGI africaines. Il ne fonctionne pas quand internet coupe. Et il coûte cher.
+1.2 La vision OHADY
+OHADY (Outil intégré de la Direction Financière et Comptable) centralise en un seul outil tout ce qu’une direction financière fait au quotidien. La comptabilité, la trésorerie, la facturation, le budget, la modélisation, le recouvrement, les déclarations fiscales et le pilotage — dans une seule application, conçue pour l’Afrique OHADA.
+Le principe fondateur : la comptabilité est une conséquence automatique des opérations. Quand une vente est constatée, l’écriture se passe automatiquement. Quand un achat est fait, l’écriture se passe automatiquement. Le comptable ne saisit pas — il contrôle et valide.
+1.3 Proposition de valeur
+SYSCOHADA natif — plan comptable révisé, trois systèmes (Normal, Allégé, SMT), liasses fiscales par pays.
+Mobile money au même rang que la banque — Wave, Orange Money, MTN Money traités comme des comptes bancaires.
+IA transversale — OCR des factures, suggestions d’écritures, détection d’anomalies, assistant conversationnel. Le comptable décide toujours.
+Mode hors-ligne — application desktop fonctionnelle sans internet, synchronisation au retour de la connexion.
+Collaboration temps réel — expert-comptable et entreprise sur les mêmes données, sans déplacement.
+17 pays, une application — fiscalité, taux de TVA, formats de liasses adaptés automatiquement au pays.
+Tarification accessible — abonnement mensuel calibré pour le marché africain.
+1.4 Personas
+Persona
+Rôle
+Besoin principal
+Indicateur clé
+Awa
+Comptable junior
+Saisir vite, importer les relevés, rapprocher
+Nb écritures/jour, temps par rapprochement
+Doudou
+Chef comptable
+Valider, contrôler, clôturer
+Taux de clôture, anomalies détectées
+Issa
+Expert-comptable
+Gérer 20-100 dossiers clients
+Alertes par dossier, temps de révision
+Hermann
+Dirigeant PME
+Voir ses chiffres sur smartphone
+Trésorerie, CA, créances en un coup d’œil
+Elis
+DAF
+Modéliser, budgéter, simuler
+Écarts budget, scénarios, ratios
+Trésorier
+Trésorier
+Gérer la caisse, les bons de dépense, les avances
+Avances non soldées, solde caisse
+1.5 Périmètre et catégories sectorielles
+OHADY cible quatre catégories d’entreprises, déployées progressivement :
+Catégorie
+Description
+Spécificité fonctionnelle
+Priorité
+A — Services
+Cabinets, agences, prestataires, consultants
+Tronc commun seul (pas de stock)
+Lot 1
+B — Commerce
+Grossistes, distributeurs, détaillants, importateurs
+Module Stocks (CMUP/FIFO)
+Lot 1
+C — BTP/Production
+Construction, fabrication, travaux publics
+Module Chantiers (avancement, retenues)
+Lot 2
+D — ONG
+Associations, fondations, projets bailleurs
+SYSCEBNL, reporting par bailleur
+Lot 2
+Hors périmètre : banques (PCEC/BCEAO), assurances (plan CIMA), microfinance (SFD). Ces secteurs utilisent des Core Banking Systems spécialisés (Temenos T24, Oracle Flexcube, IBIS) et ne sont pas la cible d’OHADY.
+2. Architecture technique
+2.1 Stack technique
+Composant
+Technologie
+Frontend
+React + TypeScript, Tailwind CSS, Recharts, Lucide Icons
+Desktop (hors-ligne)
+Electron + SQLite/SQLCipher (chiffré)
+Backend
+NestJS + TypeScript (monolithe modulaire)
+Base de données
+PostgreSQL (RDS Multi-AZ) + Prisma ORM
+Cache & queues
+Redis (ElastiCache) + BullMQ
+Stockage fichiers
+AWS S3 + CloudFront (CDN)
+IA — LLM
+Claude API (Anthropic) via couche d’abstraction
+IA — OCR
+AWS Textract (PDF/images) + Claude (structuration)
+Infrastructure
+AWS (Fargate, ALB, RDS, S3, CloudFront, SQS)
+IaC
+AWS CDK (TypeScript)
+CI/CD
+GitHub Actions + Docker + OIDC AWS
+Monitoring
+Sentry (erreurs) + CloudWatch (métriques) + Grafana (dashboards)
+2.2 Architecture applicative
+OHADY adopte une architecture monolithe modulaire. Une seule application NestJS contient tous les modules métier (comptabilité, trésorerie, facturation, etc.) comme des modules internes. Chaque module a ses propres contrôleurs, services, et entités, mais ils partagent la même base de données, le même déploiement et le même monitoring.
+Cette approche est privilégiée aux microservices pour le démarrage : complexité réduite, débogage simplifié, transactions ACID naturelles, équipe réduite (2-3 développeurs). Si un module devient un goulet d’étranglement à l’avenir (ex : l’OCR), il pourra être extrait en microservice indépendant.
+2.3 Multi-tenant et isolation des données
+Chaque entreprise cliente (tenant) est isolée des autres. L’isolation est assurée par Row Level Security (RLS) de PostgreSQL.
+Chaque table métier contient une colonne tenant_id (UUID, NOT NULL).
+Une policy RLS filtre automatiquement les données : seules les lignes du tenant courant sont visibles.
+Le tenant_id est injecté par NestJS à chaque requête via un middleware d’authentification. L’application ne peut jamais contourner le filtre.
+Même en cas de bug applicatif, PostgreSQL empêche l’accès aux données d’un autre tenant.
+2.4 Infrastructure AWS
+Fargate : conteneurs Docker stateless, minimum 2 instances pour la haute disponibilité.
+RDS PostgreSQL Multi-AZ : basculement automatique en cas de panne, Read Replica pour les lectures lourdes (rapports, exports).
+S3 : stockage des pièces jointes (factures, justificatifs, relevés), des exports PDF, des sauvegardes.
+CloudFront : CDN pour le frontend React (chargement rapide depuis l’Afrique).
+ALB : répartition de charge entre les conteneurs Fargate.
+Environnements : Dev (VPS low-cost), Staging (VPS), Production (AWS complet).
+2.5 Mode hors-ligne
+L’application desktop (Electron) fonctionne sans internet grâce à une base SQLite locale chiffrée (SQLCipher). Le comptable saisit, consulte et génère des documents normalement. Dès que internet revient, les données se synchronisent avec le serveur. La gestion des conflits (deux personnes modifient la même donnée hors-ligne) est traitée par horodatage et règle « last write wins » avec notification.
+2.6 Sécurité
+Chiffrement en transit : TLS 1.3 sur toutes les communications.
+Chiffrement au repos : AES-256 sur RDS, S3, et les sauvegardes.
+Authentification : JWT + refresh tokens, 2FA obligatoire (TOTP ou SMS).
+Mots de passe : hachage bcrypt (coût 12+), jamais stockés en clair.
+RBAC : permissions granulaires par module et par action.
+Piste d’audit : chaque création, modification, validation, suppression est enregistrée avec l’utilisateur, la date, et les valeurs avant/après. Inaltérable.
+Sauvegardes : automatiques quotidiennes, rétention 30 jours, cross-region pour la résilience.
+Scan de vulnérabilités : npm audit dans le CI/CD, OWASP ZAP périodique.
+2.7 CI/CD et déploiement
+GitHub Actions avec OIDC AWS (pas de clés d’accès en dur).
+Pipeline : lint → tests unitaires → build Docker → scan de sécurité → push ECR → déploiement staging → smoke tests → déploiement prod (blue-green).
+Rollback automatique si les smoke tests échouent.
+Migrations de base de données rétrocompatibles (expand-then-contract).
+2.8 Optimisation BDD
+Pagination obligatoire sur tous les listings (pas de chargement de milliers de lignes).
+Index couvrants sur les requêtes fréquentes (tenant_id + date, tenant_id + compte).
+Niveau d’isolation : READ COMMITTED par défaut, SERIALIZABLE pour les opérations critiques (lettrage, clôture).
+Idempotence : chaque opération critique porte un identifiant unique pour éviter les doublons en cas de retry.
+Partitionnement par date sur les tables volumineuses (écritures comptables, logs d’audit).
+2.9 IA — couche transversale
+L’IA est spécialisée dans chaque module mais partage une compréhension globale du dossier comptable. Elle est implémentée via :
+Prompt engineering : prompts spécifiques par cas d’usage (analyse de facture, suggestion d’écriture, détection d’anomalie, réponse conversationnelle).
+Few-shot learning : exemples de factures OHADA et d’écritures SYSCOHADA inclus dans les prompts.
+RAG (Retrieval-Augmented Generation) : les données réelles de PostgreSQL sont injectées dans chaque appel. L’IA ne devine pas — elle travaille avec les vrais chiffres.
+Mémoire contextuelle : les corrections du comptable sont stockées en BDD et réutilisées comme règles apprises.
+Couche d’abstraction : un service NestJS générique permet de changer de LLM (Claude → Mistral → Llama) sans modifier les modules métier.
+Sécurité IA : RLS toujours respecté, tenant_id injecté par NestJS (jamais par le prompt), protection contre l’injection de prompts, données minimisées.
+  ⚙ Paramétrable : Le LLM utilisé (Claude, GPT, Mistral) est configurable. Démarrage avec Claude API, migration possible vers un modèle hébergé en interne à terme.
+2.10 Intégrations externes
+Intégration
+Description
+Protocole
+Priorité
+Relevés bancaires
+Import CSV/Excel/PDF (BICIS, UBA, Ecobank, SGBS, BOA)
+Import fichier + OCR
+P1 — Lot 1
+Mobile money
+Import relevés Wave, Orange Money, PayDunya
+Import fichier puis API
+P1 — Lot 1
+DGI — Facturation électronique
+Envoi des factures aux plateformes DGI (SN, BJ, CI, TG)
+API REST
+P1 — Lot 1
+Email
+Envoi de factures, relances, notifications
+SMTP / API (SendGrid)
+P1 — Lot 1
+WhatsApp Business
+Envoi de factures et relances
+API WhatsApp Business
+P2 — Lot 1
+SMS
+Alertes urgentes (trésorerie critique, échéance fiscale)
+API SMS (Twilio)
+P2 — Lot 1
+SIRH Agiltym
+Récupération données de paie, fiches employés
+API REST
+P2 — Lot 2
+API bancaires directes
+Synchro automatique des transactions
+API bancaire
+P3 — Futur
+CRM / E-commerce
+Synchro clients, commandes
+API REST
+P3 — Futur
+API ouverte OHADY
+Permettre des intégrations tierces
+REST + Webhooks
+P3 — Lot 2
+3. Classe 1 — Business Planning & Pilotage
+Ce module répond à la question fondamentale du dirigeant : « Combien je veux gagner, comment on va le faire, et qu’est-ce que ça nécessite ». C’est le module du DAF et du dirigeant.
+  ⚠ Principe de paramétrage : aucune valeur n’est codée en dur. Le nombre d’années de prévision, les axes analytiques, les périodes budgétaires, les seuils d’alerte, les méthodes de calcul — tout est configurable par l’entreprise.
+3.1 Modélisation financière
+L’entreprise crée des scénarios de simulation alimentés par les données comptables réelles.
+Création de scénarios nommés (optimiste, réaliste, pessimiste, ou tout autre nom choisi par l’entreprise).
+Définition d’hypothèses par variable : croissance du CA (%), évolution des charges par rubrique, embauches prévues, investissements.
+Simulation d’impact : « que se passe-t-il si j’embauche 5 personnes, si mon CA baisse de 20%, si j’investis 50 millions ».
+Comparaison de scénarios côte à côte avec graphiques.
+Comparaison automatique des projections avec le réalisé.
+  ⚙ Paramétrable : Nombre de scénarios illimité. Variables de simulation définies librement par l’entreprise. Horizon de projection paramétrable (1, 2, 3, 5, 10 ans ou tout autre durée).
+US-BP-01 En tant que DAF, je veux créer un scénario de simulation avec des hypothèses de croissance, afin de visualiser l’impact sur le résultat et la trésorerie à horizon paramétrable.
+✓ Je peux nommer le scénario librement.
+✓ Je peux définir des hypothèses par variable (CA, charges, effectif, investissements).
+✓ Le résultat est affiché en temps réel (CR prévisionnel, trésorerie prévisionnelle, bilan prévisionnel).
+✓ Je peux comparer ce scénario avec le réalisé.
+3.2 Prévisions financières
+Les prévisions sont interconnectées : le bilan prévisionnel, le compte d’exploitation prévisionnel et le plan de trésorerie prévisionnel sont générés à partir du même jeu d’hypothèses et se mettent à jour ensemble.
+Bilan prévisionnel : actif et passif projetés sur l’horizon paramétré.
+Compte d’exploitation prévisionnel : produits et charges projetés, marge, résultat net.
+Plan de trésorerie prévisionnel : entrées et sorties mois par mois, solde projeté.
+Seuil de rentabilité calculé automatiquement.
+Plan de financement si applicable.
+  ⚙ Paramétrable : Horizon paramétrable (pas forcément 5 ans — l’entreprise choisit). Périodicité paramétrable (mensuelle, trimestrielle, annuelle).
+3.3 Budget dynamique
+Le budget dans OHADY n’est pas un exercice annuel figé. Il évolue avec l’activité.
+Définition d’enveloppes par rubrique budgétaire et par période.
+Mise à jour en temps réel de la consommation à chaque dépense enregistrée.
+Alertes paramétrables quand un seuil est atteint (par défaut 80% et 100%, modifiable).
+Blocage optionnel des dépenses hors budget (avec circuit de dérogation).
+Rolling forecast : projection glissante sur les N prochains mois (N paramétrable).
+Révisions budgétaires versionées (chaque révision est datée, justifiée et conservée).
+Comparaison réalisé/budget avec tableaux d’écarts.
+  ⚙ Paramétrable : Rubriques budgétaires définies librement. Seuils d’alerte paramétrables par rubrique. Blocage activable ou non. Périodicité du budget paramétrable (mensuel, trimestriel, annuel).
+US-BP-02 En tant que dirigeant, je veux voir instantanément l’état de consommation de chaque rubrique budgétaire, afin de prendre des décisions de dépense informées.
+✓ Le tableau de bord affiche chaque rubrique avec budget, consommé, disponible, et barre de progression colorée.
+✓ Les rubriques en dépassement sont signalées en rouge.
+✓ Je peux cliquer sur une rubrique pour voir le détail des dépenses.
+3.4 Comptabilité analytique
+Définition libre des axes d’analyse : département, projet, chantier, produit, région, client, etc.
+Nombre d’axes simultanés paramétrable (jusqu’à 10 ou plus selon la configuration).
+Ventilation des écritures par axe (automatique via règles ou manuelle).
+Balance analytique, compte de résultat par axe, comparaisons entre axes et périodes.
+  ⚙ Paramétrable : Axes, sous-axes et clés de répartition définis librement par l’entreprise.
+3.5 Rôle de l’IA dans ce module
+Prédiction des dépassements budgétaires basée sur les tendances de consommation.
+Suggestion d’hypothèses budgétaires pour l’année suivante basée sur l’historique.
+Commentaire automatique des écarts (pourquoi tel poste dépasse, quelles dépenses principales).
+4. Classe 2 — Trésorerie
+Le module Trésorerie est le cœur opérationnel quotidien. Il répond à la question « où est mon argent maintenant ».
+4.1 Vue trésorerie unifiée
+Un seul écran affiche la trésorerie totale de l’entreprise, tous canaux confondus.
+Cartes par compte (banques, mobile money, caisse) avec logo/icône de l’institution, solde, et date du dernier relevé importé.
+Badge de fraîcheur : vert si relevé récent (< 2 jours), orange si ancien (> 3 jours), rouge si très ancien (> 7 jours), bleu si connecté par API.
+Graphique d’évolution de la trésorerie globale sur une période paramétrable.
+Liste chronologique unifiée des derniers mouvements toutes sources confondues.
+  ⚙ Paramétrable : Nombre de comptes illimité. Seuils de fraîcheur paramétrables. Période du graphique paramétrable.
+4.2 Rapprochement par relevé
+Le rapprochement fonctionne par dépôt de relevé. Le comptable télécharge le relevé depuis le portail de chaque institution et le dépose dans OHADY.
+  ⚙ Workflow de rapprochement par relevé
+1. Le comptable sélectionne la source (BICIS, UBA, Ecobank, SGBS, BOA, Wave, OM, PayDunya, Autre).
+2. Il dépose le fichier (CSV, Excel ou PDF) dans la zone d’import.
+3. OHADY analyse le fichier : parsing pour CSV/Excel, OCR (Textract + Claude) pour PDF.
+4. OHADY affiche les opérations avec un code couleur :
+   VERT = rapprochée avec une écriture existante (confiance haute)
+   BLEU = écriture proposée par l’IA (compte, tiers, libellé préremplis)
+   ORANGE = incertain, le comptable doit décider
+   ROUGE = non reconnu, saisie manuelle nécessaire
+5. Le comptable valide les lignes vertes en lot (un clic).
+6. Il vérifie et valide les lignes bleues une par une.
+7. Il traite manuellement les lignes orange et rouge.
+8. OHADY affiche le récapitulatif : solde comptable, solde relevé, écart expliqué.
+  ⚙ Paramétrable : Sources paramétrables (l’entreprise ajoute ses banques et opérateurs). Parseurs adaptables à chaque format de relevé. Seuils de confiance IA paramétrables.
+US-TR-01 En tant que comptable, je veux importer un relevé bancaire PDF de la BICIS et obtenir des propositions d’écritures, afin de réduire le temps de rapprochement de 3 heures à 15 minutes.
+✓ Je peux déposer un fichier PDF, CSV ou Excel.
+✓ OHADY reconnaît la source automatiquement ou me la demande.
+✓ Les opérations sont affichées avec le code couleur (vert/bleu/orange/rouge).
+✓ Je peux valider les lignes vertes en lot en un seul clic.
+✓ Le récapitulatif montre l’écart entre solde comptable et solde du relevé.
+4.3 Gestion bancaire avancée
+4.3.1 Suivi des chèques
+Cycle de vie : émis → remis au fournisseur → déposé par le fournisseur → prélevé par la banque.
+Vue des chèques en circulation (montant total des chèques émis non encore prélevés).
+4.3.2 Virements SWIFT
+Cycle de vie : ordre de virement → débit compte → SWIFT envoyé → confirmation de réception.
+4.3.3 Mouvements entre comptes
+Virements internes (banque vers caisse, banque vers Wave, etc.) avec motif et traçabilité.
+Génération automatique des écritures comptables croisées.
+4.4 Pipeline client (encaissements)
+Inspiré de l’approche Arapyl, le pipeline client suit chaque client à travers les étapes du cycle commercial.
+8 statuts : Devis envoyé → Bon de commande reçu → Plan d’encaissement défini → Livraison effectuée → Facture émise → À encaisser → Créance (< 30j) → À recouvrer (> 30j) / Contentieux.
+Plan d’encaissement : définition d’acomptes (nombre, montants, dates). Le nombre d’acomptes est libre.
+Projection d’encaissements sur N mois glissants (N paramétrable), basée sur les plans d’encaissement contractuels.
+Gestion des incidents clients : déclaration d’incident (litige qualité, retard livraison, etc.), plan d’action avec responsable et échéance, suivi et résolution, impact financier estimé.
+  ⚙ Paramétrable : Statuts du pipeline paramétrables. Nombre d’acomptes illimité. Seuils de créance/recouvrement paramétrables (pas forcément 30 jours).
+4.5 Pipeline fournisseur (décaissements)
+Statuts symétriques : Devis reçu → BC envoyé → Plan de paiement défini → Livraison reçue → Facture reçue → À payer → Dette (< 30j de retard) → Très en retard (> 30j).
+Alertes paramétrables avant échéance (7, 3, 1 jours par défaut — modifiable).
+4.6 Prévisions de trésorerie court terme
+Entrées prévues (factures clients à encaisser, par source de paiement attendue).
+Sorties prévues (factures fournisseurs, salaires, charges fixes, échéances fiscales).
+Solde projeté jour par jour, avec ligne de seuil d’alerte configurable.
+Commentaire IA contextuel sur les risques identifiés.
+  ⚙ Paramétrable : Horizon de prévision paramétrable (1, 3, 6, 12 mois). Seuil d’alerte de liquidité paramétrable.
+4.7 Rôle de l’IA dans ce module
+Reconnaissance des opérations récurrentes sur les relevés (loyer, téléphone, abonnements).
+Proposition de rapprochement et d’écritures avec indicateur de confiance.
+Détection d’anomalies (prélèvement inconnu, montant en double, virement suspect).
+Prévisions de trésorerie basées sur l’historique et la saisonnalité.
+5. Classe 3 — Cycle commercial (Ventes & Clients)
+5.1 Devis
+Éléments d’un devis dans OHADY :
+En-tête : identité de l’entreprise (raison sociale, NINEA, RCCM, logo, adresse, contacts) — prérempli depuis le paramétrage.
+Client : sélection depuis la base tiers avec auto-complétion.
+Références : numéro séquentiel auto, date, durée de validité (paramétrable), référence demande client.
+Corps : tableau de lignes (désignation, quantité, unité, prix unitaire HT, total HT) avec auto-complétion depuis le catalogue.
+Totaux : Total HT, remise, Net HT, TVA (taux paramétré par pays), Total TTC, montant en lettres.
+Conditions : paiement, livraison, garantie.
+Coordonnées bancaires et mobile money de l’entreprise (paramétrables, choix d’affichage).
+Validation flexible : signature électronique, validation par email, par WhatsApp, ou verbale (le commercial marque « accepté » manuellement).
+  ⚙ Paramétrable : Format de numérotation paramétrable. Durée de validité par défaut paramétrable. Mentions légales paramétrables. Obligation de signature paramétrable (chaque entreprise définit son niveau d’exigence).
+5.2 Facturation
+Transformation devis → bon de commande → facture sans ressaisie.
+Personnalisation des documents : logo, mentions légales, coordonnées bancaires, conditions de vente.
+Signature électronique intégrée.
+Envoi par email et WhatsApp directement depuis OHADY.
+Facturation électronique : envoi à la plateforme DGI du pays et récupération du code de conformité.
+Factures récurrentes : génération automatique pour les contrats et abonnements (périodicité paramétrable).
+Échéanciers de paiement : une facture payable en N fois (N libre) avec dates et montants.
+Escompte pour paiement anticipé : calcul automatique de la remise si paiement avant échéance.
+Lien de paiement intégré à la facture (paiement en ligne ou mobile money).
+Génération automatique de l’écriture comptable à chaque facture émise.
+Suivi du statut : brouillon, envoyée, payée, en retard, en litige.
+  ⚙ Paramétrable : Modèles de factures paramétrables. Taux de TVA paramétrable par pays et par produit/service. Taux d’escompte paramétrable. Format de numérotation paramétrable.
+US-VT-01 En tant que comptable, je veux créer une facture à partir d’un devis accepté, afin de ne pas ressaisir les informations et générer l’écriture automatiquement.
+✓ Je sélectionne le devis accepté, toutes les informations sont reprises.
+✓ Je peux modifier avant validation.
+✓ La facture est personnalisée avec le logo et les mentions légales.
+✓ L’écriture comptable est générée automatiquement (411 Client, 706 Prestations, 4431 TVA).
+✓ Je peux envoyer par email ou WhatsApp depuis OHADY.
+5.3 Recouvrement
+Balance âgée par client (tranches paramétrables, par défaut 0-30, 30-60, 60-90, 90+).
+Scénarios de relance configurables : chaque étape définit le délai, le canal (email/SMS/WhatsApp), et le modèle de message.
+Envoi automatique des relances selon le scénario.
+Historique complet des relances par client (date, canal, contenu, réponse).
+Calcul automatique des pénalités de retard (taux paramétrable).
+Gestion des incidents clients avec plans d’action (responsable, échéance, suivi).
+  ⚙ Paramétrable : Tranches de la balance âgée paramétrables. Scénarios de relance paramétrables (nombre d’étapes, délais, canaux, modèles). Taux de pénalité paramétrable.
+5.4 Lettrage
+Lettrage automatique : OHADY rapproche les paiements reçus avec les factures non lettrées par montant et par tiers.
+Lettrage manuel : le comptable sélectionne les écritures à rapprocher.
+Lettrage partiel : un paiement de 300 000 sur une facture de 500 000 — reste 200 000 non lettré.
+Lettrage avec escompte : paiement inférieur au montant de la facture avec écriture d’escompte automatique.
+Lettrage multiple : un paiement unique rapproché de plusieurs factures.
+6. Classe 4 — Cycle achats (Dépenses & Fournisseurs)
+6.1 Circuit d’approbation des dépenses
+Toute dépense suit un circuit formalisé avant d’être engagée.
+  ⚙ Workflow complet d’une dépense
+1. Le demandeur crée une demande : type (achat/mission/formation/avance), motif, montant, rubrique.
+2. OHADY vérifie le budget disponible et l’affiche au validateur.
+3. La demande est transmise au validateur selon les seuils :
+   • Seuil 1 (paramétrable) : validation chef de département seul.
+   • Seuil 2 (paramétrable) : chef de département + DAF.
+   • Seuil 3 (paramétrable) : chef de département + DAF + DG.
+4. Le validateur approuve, refuse ou demande une modification.
+5. Si approuvée, la demande arrive chez le trésorier.
+6. Le trésorier crée le bon de dépense (n° auto, bénéficiaire, montant, mode de paiement).
+7. Le trésorier décaisse.
+8. La personne revient avec le justificatif — le trésorier le joint au bon dans OHADY.
+9. Le bon passe dans la file du comptable (attribution automatique ou manuelle par le chef comptable).
+10. Le comptable vérifie, valide. OHADY génère l’écriture et met à jour le budget.
+  ⚙ Paramétrable : Nombre de niveaux de validation paramétrable. Seuils de montant paramétrables. Types de demandes paramétrables. Règles d’attribution aux comptables paramétrables.
+Délégation de validation en cas d’absence : le validateur désigne un suppléant temporaire.
+6.2 Suivi des avances
+Les avances au personnel (missions, achats) sont suivies rigoureusement.
+Tableau de bord des avances non soldées par employé.
+Code couleur par durée : vert (< 15j), orange (15-30j), rouge (> 30j) — seuils paramétrables.
+Alertes automatiques quand une avance dépasse le délai paramétré.
+Types d’avances : mission (avec per diem paramétrable par destination et par grade), achat, salaire.
+Régularisation au retour : comparaison avance vs justificatifs, remboursement du trop-perçu ou complément.
+  ⚙ Paramétrable : Montants de per diem paramétrables par destination et par catégorie d’employé. Délais d’alerte paramétrables.
+6.3 Achats fournisseurs
+Cycle complet : bon de commande, réception, facture fournisseur (saisie ou OCR), rapprochement commande/réception/facture.
+Échéancier fournisseurs : qui payer, quand, combien.
+Préparation des règlements en lot : OHADY prépare la liste, le comptable valide, OHADY génère le fichier pour la banque.
+7. Classe 5 — Comptabilité & Conformité
+La comptabilité dans OHADY est principalement générée automatiquement depuis les classes 2, 3 et 4. La saisie manuelle est réservée aux écritures d’inventaire, de régularisation et aux cas particuliers.
+7.1 Comptabilité générale
+Plan comptable SYSCOHADA révisé intégré, personnalisable (ajout de sous-comptes).
+Trois systèmes supportés : Normal, Allégé, SMT.
+Journaux : achats, ventes, banque (un par compte), caisse, OD, et journaux personnalisés.
+Saisie manuelle d’écritures (pour les cas spécifiques) avec auto-complétion des comptes et des libellés.
+Libellé obligatoire sur chaque écriture, avec auto-complétion et génération automatique.
+Contrôle d’équilibre en temps réel (débit = crédit).
+Workflow : brouillon → soumis à validation (junior) → validé (senior). Le senior peut valider directement.
+Contre-passation : annulation d’une écriture validée par une écriture inverse tracée.
+Piste d’audit inaltérable : chaque action (création, modification, validation) enregistrée.
+Pièce jointe rattachée à chaque écriture (scan, photo du justificatif).
+Notes internes et tags personnalisables (« à vérifier », « urgent », etc.).
+Consultation : grand livre (solde progressif), balance générale, balance auxiliaire.
+Export : Excel, CSV, PDF. Impression directe.
+7.2 Gestion des suspens
+Concept introduit par Hermann : les opérations enregistrées mais pas encore justifiées sont « en suspens ».
+Liste des écritures en suspens avec ancienneté.
+Alertes quand un suspens dépasse un délai paramétrable.
+Levée du suspens : rattachement du justificatif → l’écriture passe en validé.
+7.3 Attribution des pièces aux comptables
+Quand plusieurs comptables travaillent sur le même dossier, les pièces sont réparties.
+Attribution automatique par règles (par type d’opération, par journal, par tiers).
+Attribution manuelle par le chef comptable.
+File de travail individuelle par comptable.
+Verrouillage anti-doublon : une pièce ouverte par un comptable est verrouillée pour les autres.
+Vue du chef comptable : charge de travail par comptable, réattribution si déséquilibre.
+  ⚙ Paramétrable : Règles d’attribution paramétrables par l’entreprise.
+7.4 TVA et déclarations fiscales
+Calcul automatique TVA collectée (ventes) et déductible (achats) à chaque écriture.
+Gestion du prorata pour les entreprises avec activités mixtes.
+Gestion des retenues de TVA par les clients.
+Retenues à la source (BRS au Sénégal) : identification, calcul, bordereau.
+Génération de la déclaration de TVA au format DGI du pays.
+Alertes avant chaque échéance fiscale.
+  ⚙ Paramétrable : Taux de TVA paramétrables par pays et par type d’opération. Dates d’échéance paramétrables. Formats de déclaration par pays.
+7.5 Immobilisations et amortissements
+Registre des immobilisations (fiches par bien : acquisition, valeur, durée de vie, méthode).
+Calcul automatique (linéaire, dégressif, par composants — méthodes SYSCOHADA).
+Génération des écritures de dotation (périodicité paramétrable : mensuelle, annuelle).
+Cessions et mises au rebut avec calcul plus/moins-value.
+Tableau des immobilisations pour les états financiers.
+7.6 Stocks
+Module actif uniquement pour les catégories B (commerce) et C (BTP/production).
+Fiches articles, mouvements (entrées, sorties, transferts), valorisation (CMUP, FIFO).
+Inventaire physique, ajustements, alertes de seuil paramétrables.
+Écritures automatiques de variation de stock.
+7.7 Gestion des devises
+Saisie en devises étrangères avec taux de change du jour.
+Conversion automatique en monnaie locale.
+Réévaluation des créances et dettes en devises à la clôture.
+Écritures d’écarts de change automatiques.
+7.8 Clôture
+7.8.1 Clôture mensuelle
+Checklist interactive guidée par l’IA, étape par étape.
+Vérification automatique : rapprochement fait ? Amortissements passés ? TVA calculée ? Écritures en brouillon ?
+Verrouillage du mois après validation complète.
+7.8.2 Clôture annuelle
+Génération automatique des à-nouveaux (report des soldes de bilan).
+Travail sur deux exercices en parallèle (l’ancien pas encore clôturé, le nouveau déjà commencé).
+Verrouillage de l’exercice clôturé.
+Réouverture exceptionnelle contrôlée (traçabilité complète, autorisation du responsable).
+7.9 États financiers SYSCOHADA
+Bilan (actif et passif au format SYSCOHADA exact).
+Compte de résultat (présentation en liste SYSCOHADA).
+TAFIRE (Tableau Financier des Ressources et des Emplois).
+Tableau des flux de trésorerie.
+Notes annexes (20+ tableaux obligatoires).
+Liasse fiscale par pays (DSF au Sénégal, case par case, préremplie).
+Comparaisons N/N-1.
+7.10 Éditions et impressions
+PDF de qualité professionnelle pour tous les états.
+Modèles personnalisables (logo, mentions légales, en-têtes, pieds de page).
+Export Excel pour retraitement.
+Envoi par email depuis OHADY.
+8. Classe 6 — Intelligence & Reporting
+L’IA n’est pas un module isolé. Elle est intégrée dans chaque module avec une spécialisation adaptée, plus un assistant global central.
+8.1 Assistant global conversationnel
+Accessible depuis n’importe quel écran (bouton ou panneau latéral).
+Questions en français sur les données réelles de l’entreprise.
+Réponses avec les chiffres, les sources et les graphiques inline.
+Mémoire de conversation (l’assistant se souvient du contexte de l’échange en cours).
+Suggestions de questions fréquentes adaptées au rôle de l’utilisateur.
+US-IA-01 En tant que dirigeant, je veux poser une question en français sur ma trésorerie et obtenir une réponse immédiate, afin de avoir mes chiffres sans appeler mon comptable.
+✓ Je pose « Quel est mon CA du trimestre » et je reçois le montant exact avec la comparaison N-1.
+✓ Je peux enchaîner « Et par client » et l’assistant comprend le contexte.
+✓ Chaque chiffre cite sa source (journal, période).
+8.2 OCR et saisie intelligente
+Dépôt de document (PDF, photo, scan) dans une zone de drag & drop.
+Vue côte à côte : image de la facture à gauche, données extraites à droite.
+Champs extraits éditables : fournisseur, date, montant HT, TVA, TTC, référence.
+Proposition d’écriture comptable complète.
+Indicateur de confiance par champ (95%, 80%, 60%).
+Apprentissage par correction : les corrections améliorent les propositions futures.
+8.3 Détection d’anomalies
+Doublons d’écritures.
+Soldes anormaux (caisse négative, compte client au crédit, etc.).
+Écritures non lettrées depuis trop longtemps (seuil paramétrable).
+Oublis : amortissements non passés, provisions manquantes.
+Rapport quotidien des points à vérifier.
+8.4 Tableaux de bord
+Dashboard dirigeant : CA, résultat, trésorerie, créances, tendances.
+Dashboard comptable : écritures en attente, rapprochement, TVA, clôture.
+Dashboard expert-comptable : vue multi-dossiers, alertes par dossier.
+Dashboard DAF : budget, analytique, prévisions, ratios.
+Dashboard trésorier : caisse, avances non soldées, bons de dépense en cours.
+KPI financiers : DSO, DPO, BFR, taux de recouvrement, marge.
+Drill-down : cliquer sur un chiffre pour voir le détail.
+Personnalisation : chaque utilisateur choisit ses indicateurs.
+  ⚙ Paramétrable : KPI paramétrables. Tableaux de bord personnalisables par utilisateur. Périodes de comparaison paramétrables.
+9. Classe 7 — Administration & Intégrations
+9.1 Paramétrage
+Le paramétrage est le premier module utilisé lors de l’inscription d’une entreprise.
+Fiche entreprise : raison sociale, NINEA, RCCM, adresse, logo, contacts, mentions légales.
+Pays et régime fiscal : choix du pays OHADA, taux de TVA appliqués automatiquement.
+Système comptable : Normal, Allégé, SMT.
+Catégorie sectorielle : Services (A), Commerce (B), BTP (C), ONG (D).
+Plan comptable : SYSCOHADA par défaut, personnalisable (ajout/modification de sous-comptes).
+Exercices comptables : dates de début et fin, exercice en cours, exercices antérieurs.
+Journaux : prédéfinis (HA, VT, BQ, CA, OD) + possibilité d’en créer.
+Comptes bancaires et mobile money : ajout avec logo/icône, coordonnées.
+Rubriques budgétaires et enveloppes.
+Seuils d’approbation et circuits de validation.
+Modèles de documents (factures, devis, relances).
+Scénarios de relance.
+Per diem par destination et par catégorie.
+Tous les délais d’alerte (fraîcheur relevés, avances, créances, échéances fiscales).
+9.2 Utilisateurs et rôles (RBAC)
+Profils prédéfinis : comptable junior, comptable senior, chef comptable, trésorier, DAF, dirigeant, expert-comptable, auditeur (lecture seule).
+Chaque profil a des permissions granulaires par module et par action (voir, créer, modifier, valider, supprimer, exporter).
+Possibilité de créer des profils personnalisés.
+2FA obligatoire pour tous les utilisateurs.
+  ⚙ Paramétrable : Profils et permissions entièrement paramétrables par l’entreprise.
+9.3 Gestion des tiers
+Trois catégories : clients, fournisseurs, employés (comme tiers sans accès).
+Fiche complète : coordonnées, banque, mobile money, conditions de paiement, historique.
+Employés : choix de gestion détaillée (un sous-compte par employé) ou globale (un compte collectif).
+Synchronisation automatique avec le SIRH pour les fiches employés.
+Catalogue de produits et services (désignation, prix, TVA, unité).
+9.4 Collaboration expert-comptable / entreprise
+Portail expert-comptable avec vue multi-dossiers.
+Alertes par dossier (anomalies, retards, clôtures en attente).
+Commentaires et annotations sur les écritures.
+Révocation d’accès si changement de cabinet.
+9.5 Multi-entités
+Dossiers indépendants par entité du groupe.
+Vue consolidée (trésorerie globale, CA global).
+Opérations inter-sociétés.
+9.6 Migration
+Import du plan comptable depuis Excel ou export Sage.
+Import de la balance d’ouverture.
+Import des fiches tiers.
+Assistant guidé pas à pas.
+9.7 Notifications et alertes
+Canaux : in-app, email, SMS, WhatsApp.
+Configuration par utilisateur (choix des alertes et du canal).
+Types : trésorerie, échéances fiscales, relances, validation en attente, anomalies IA.
+9.8 Back office OHADY
+Gestion des tenants (création, suspension, suppression).
+Monitoring technique (santé serveurs, temps de réponse, erreurs).
+Configuration sectorielle (ajout de paramétrages par secteur).
+Tableau de bord financier de la plateforme (MRR, nombre de tenants, churn).
+10. Sécurité
+Authentification : JWT + refresh tokens, 2FA obligatoire (TOTP ou SMS), rate limiting sur les endpoints de login.
+Chiffrement en transit : TLS 1.3 sur toutes les communications.
+Chiffrement au repos : AES-256 sur RDS, S3, sauvegardes. SQLCipher pour le mode hors-ligne.
+Mots de passe : bcrypt (coût 12+), politique de complexité paramétrable.
+Piste d’audit : chaque action enregistrée (utilisateur, date, action, valeurs avant/après). Table append-only.
+Sauvegardes : quotidiennes automatiques, rétention 30 jours, cross-region.
+Scan de vulnérabilités : npm audit dans CI/CD, OWASP ZAP périodique, SonarQube pour l’analyse statique.
+Conformité : journalisation des accès, droit de consultation par le client, notification en cas de brèche.
+11. Performance et qualité
+Disponibilité cible : 99.9% (soit moins de 8h45 d’indisponibilité par an).
+Temps de réponse : < 200ms au P95 pour les opérations courantes.
+Tests unitaires : couverture minimum 80% du code métier.
+Tests d’intégration : chaque workflow critique (saisie, rapprochement, clôture) testé de bout en bout.
+Tests de charge : simulation de 100 utilisateurs simultanés.
+Monitoring : Sentry (erreurs en temps réel), CloudWatch (métriques infra), Grafana (dashboards techniques).
+12. UX/UI
+Style : professionnel et structuré, inspiré des applications bancaires modernes.
+Palette : primaire #1A3C5E (confiance), secondaire #2980B9 (actions), accent #E67E22 (alertes), succès #27AE60, danger #E74C3C.
+Typographie : Inter (sans-serif), hiérarchie claire.
+Icônes : Lucide Icons, trait fin, monochromes.
+Navigation : sidebar fixe à gauche (240px) avec les 7 classes de modules + assistant IA en bas.
+Header : fil d’Ariane, recherche globale, notifications, sélecteur d’exercice, profil utilisateur.
+Prototype de référence : https://tchapda3002.github.io/ohady-prototype/
+13. Roadmap et lotissement
+13.1 Lot 1 — MVP
+Cible : décembre 2026. Catégories A (services) et B (commerce).
+Paramétrage complet et gestion des tiers.
+Circuit de demandes et approbations.
+Trésorerie (vue unifiée, rapprochement par relevé multi-sources, caisse).
+Facturation (devis, factures, envoi email/WhatsApp).
+Comptabilité générale (journaux, grand livre, balance, lettrage).
+TVA et déclarations fiscales.
+Stocks (pour catégorie B).
+Clôture mensuelle.
+Migration depuis Sage/Excel.
+Éditions et impressions.
+13.2 Lot 2 — Enrichissement
+Cible : T2 2027.
+Clôture annuelle complète et états financiers SYSCOHADA.
+Immobilisations et amortissements.
+Comptabilité analytique.
+Budget dynamique et rolling forecast.
+Modélisation financière.
+Tableaux de bord avancés.
+IA avancée (OCR, assistant conversationnel, détection d’anomalies).
+Application desktop (Electron) avec mode hors-ligne.
+Intégration SIRH Agiltym.
+Collaboration expert-comptable.
+Facturation électronique DGI.
+13.3 Lot 3 — Extension sectorielle
+Cible : S2 2027+.
+Catégorie C (BTP) : module Chantiers, comptabilité à l’avancement, retenues de garantie.
+Catégorie D (ONG) : SYSCEBNL, module Projets/Bailleurs, reporting par bailleur.
+13.4 Estimation de charge
+Phase
+Durée
+Ressources
+Période
+Cadrage et conception
+4-6 semaines
+Équipe complète
+Mai-Juin 2026
+Socle technique
+3-4 semaines
+Dev + DevOps
+Juin 2026
+Développement Lot 1
+14-18 semaines
+2-3 développeurs
+Juillet-Octobre 2026
+Tests et stabilisation
+4-6 semaines
+Équipe + métier
+Novembre 2026
+Soft launch
+2 semaines
+Équipe complète
+Décembre 2026
+Développement Lot 2
+16-20 semaines
+2-3 développeurs
+Janvier-Mai 2027
+13.5 Équipe projet
+Membre
+Rôle
+Responsabilité
+Hermann CAKPO
+Chef de projet / BA
+Vision produit, cahier des charges, validation métier
+Marie Reine CAKPO
+Architecte technique
+Architecture, modèle de données, revue de code
+Wilfred TCHAPDA
+Lead développeur
+Développement backend et frontend, intégrations
+Boukari Issa YOMENOU
+Expert-comptable
+Règles SYSCOHADA, validation fonctionnelle, tests métier
+Elis KOUAKOU
+Finance / Modélisation
+Budget, simulations, ratios, tableaux de bord financiers
+Awa DIENG
+Comptable test
+Tests terrain, ergonomie, retours utilisateur
+Doudou Samb SOW
+Comptable test
+Tests terrain, workflows de validation, clôture
+Raissa ABISSAMA
+PMO
+Suivi du planning, coordination, reporting
+Anna NDIAYE
+Head DevOps
+Infrastructure, CI/CD, sécurité, monitoring
+14. Annexes
+14.1 Glossaire
+Terme
+Définition
+SYSCOHADA
+Système Comptable OHADA — référentiel comptable commun aux 17 pays OHADA.
+SYSCEBNL
+Système Comptable des Entités à But Non Lucratif — référentiel pour les ONG et associations.
+PCEC
+Plan Comptable des Établissements de Crédit — référentiel pour les banques.
+RLS
+Row Level Security — mécanisme PostgreSQL d’isolation des données par tenant.
+OCR
+Optical Character Recognition — lecture automatique de texte dans les images/PDF.
+LLM
+Large Language Model — modèle d’IA capable de comprendre et générer du langage.
+RAG
+Retrieval-Augmented Generation — technique d’IA combinant recherche de données et génération.
+Lettrage
+Rapprochement d’une facture avec son paiement pour confirmer que la facture est soldée.
+Suspens
+Opération enregistrée mais pas encore justifiée, en attente de pièce.
+TAFIRE
+Tableau Financier des Ressources et des Emplois — état financier SYSCOHADA.
+DSF
+Déclaration Statistique et Fiscale — liasse fiscale au Sénégal.
+BRS
+Bordereau de Retenue à la Source — déclaration fiscale au Sénégal.
+DSO
+Days Sales Outstanding — délai moyen d’encaissement des créances clients.
+DPO
+Days Payable Outstanding — délai moyen de paiement des fournisseurs.
+BFR
+Besoin en Fonds de Roulement — besoin de financement du cycle d’exploitation.
+DGID
+Direction Générale des Impôts et des Domaines — administration fiscale du Sénégal.
+14.2 Benchmark concurrentiel
+Critère
+Sage 100
+Perfecto
+JournalPlus
+OHADY
+SYSCOHADA natif
+Non (adapté)
+Partiel
+Partiel
+Oui
+Mobile money
+Non
+Non
+Non
+Oui (Wave, OM)
+IA / OCR
+Non
+Non
+Non
+Oui
+Mode hors-ligne
+Oui (local)
+Non
+Non
+Oui (Electron)
+Cloud / SaaS
+Non (local)
+Oui
+Oui
+Oui
+Multi-pays OHADA
+Limité
+Limité
+Limité
+17 pays
+Liasses fiscales DGI
+Non
+Partiel
+Partiel
+Oui (par pays)
+Collaboration EC
+Non
+Partiel
+Partiel
+Oui (temps réel)
+Facturation électronique
+Non
+Partiel
+Non
+Oui
+Budget dynamique
+Non
+Non
+Non
+Oui
+Modélisation financière
+Non
+Non
+Non
+Oui
+Tarification
+Licence chère
+Abonnement
+Abonnement
+Abonnement accessible
+— Fin du cahier des charges —
+Version 0.2 — Mai 2026 — H&C Group — Confidentiel

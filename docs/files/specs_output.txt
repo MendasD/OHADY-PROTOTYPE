@@ -1,0 +1,1852 @@
+H&C GROUP
+Business Solutions Holding
+DOCUMENT DE SPÉCIFICATIONS
+Outil de Modélisation Financière Multisectoriel
+Spécifications fonctionnelles et techniques
+Cible : équipes de développement & direction métier
+Périmètre : 8 secteurs — Zone UEMOA / CEMAC / International
+Normes : SYSCOHADA Révisé, IFRS, CIMA, Bâle III, Solvabilité
+Version 1.0 — Mai 2026
+Sommaire
+1. Vision & cadre conceptuel
+2. Cadre méthodologique transverse
+3. Référentiel des critères de modélisation universels
+4. Référentiels normatifs et fiscaux par zone
+5. Spécifications par secteur
+    5.1 BTP — Bâtiments, Travaux Publics, Génie Civil
+    5.2 Banque (IFRS et SYSCOHADA bancaire)
+    5.3 Assurance Zone CIMA (Vie et Non-Vie)
+    5.4 Achats-Vente, Commerce et Distribution
+    5.5 Industrie et Manufacture
+    5.6 Fintech et services financiers numériques
+    5.7 Entreprises de services (conseil, ingénierie, B2B)
+    5.8 Hôpitaux et établissements de santé
+    5.9 ONG et organisations à but non lucratif
+6. Architecture technique cible de l'outil
+7. Roadmap de développement
+8. Annexes — Glossaire et sources réglementaires
+1. Vision & cadre conceptuel
+1.1 Objectif stratégique
+L'outil de modélisation financière multisectoriel a pour ambition de devenir la plateforme de référence permettant aux dirigeants, directions financières, banques, investisseurs, consultants et auditeurs de la zone francophone (UEMOA, CEMAC) et au-delà, de construire, comparer, stresser et publier des modèles financiers structurés selon les meilleures pratiques sectorielles.
+À la différence d'un tableur générique (Excel) ou d'un outil de Corporate FP&A (Anaplan, Cube, Workday Adaptive), cet outil intègre nativement les spécificités métiers, fiscales et réglementaires de chaque secteur. Une banque ne se modélise pas comme une fintech, et une compagnie d'assurance CIMA obéit à un cadre prudentiel distinct de celui d'un assureur européen. L'outil rend ces différences explicites et les opérationnalise dans des templates configurables.
+1.2 Principes directeurs
+Universalité du moteur de calcul, spécialisation des templates : un seul moteur de calcul (flux comptables, fiscaux, financiers) commun à tous les secteurs ; les templates sectoriels apportent la spécificité métier.
+Paramétrabilité poussée : toutes les hypothèses sont des inputs modifiables. L'outil ne contient aucune valeur métier hardcodée.
+Conformité normative active : les normes comptables (SYSCOHADA, IFRS) et réglementaires (CIMA, Bâle, Solvabilité) sont intégrées comme contraintes vérifiables. L'outil signale les écarts.
+Traçabilité totale : chaque cellule de chaque output (P&L, bilan, trésorerie, KPI) doit être traçable jusqu'à ses inputs sources via le data lineage.
+Multi-scénario natif : tout modèle existe en au moins trois scénarios (pessimiste, base, optimiste). Les comparaisons sont systématiques.
+Multi-devise et multi-norme : un même modèle peut être présenté en FCFA, EUR, USD et selon SYSCOHADA ou IFRS, sans ressaisie.
+Auditabilité : journal d'audit de toutes les modifications d'hypothèses, versioning des modèles, signature numérique des publications.
+1.3 Personae utilisateurs
+Persona
+Profil
+Cas d'usage principaux
+Complexité
+Dirigeant / CEO
+Décideur, non-expert financier
+Pilotage, scénarios, décisions stratégiques
+Faible
+DAF / CFO
+Expert financier
+Construction, maintenance, audit des modèles
+Élevé
+Contrôleur de gestion
+Analyste métier
+Suivi mensuel, écarts, reforecast
+Moyen-élevé
+Auditeur externe
+Commissaire aux comptes
+Revue de cohérence, vérification normative
+Moyen
+Investisseur / Banquier
+Analyste crédit ou equity
+Analyse de dossier, stress tests
+Moyen
+Consultant / Conseil
+Expert sectoriel multi-clients
+Production de modèles pour clients
+Élevé
+1.4 Différenciation concurrentielle
+Le marché de la modélisation financière en zone francophone Afrique est aujourd'hui dominé par Excel. Les outils SaaS internationaux (Mosaic, Anaplan, Cube, Pigment, Causal) sont peu adaptés aux normes locales (SYSCOHADA, CIMA, fiscalité UEMOA/CEMAC) et facturés en devises fortes. La proposition de valeur de l'outil repose sur quatre piliers :
+Couverture normative locale : SYSCOHADA Révisé (2017), CIMA, OHADA, fiscalités UEMOA et CEMAC nativement supportés.
+Bibliothèque sectorielle prête à l'emploi : 8 secteurs avec leurs templates, KPIs et règles métier déjà modélisés.
+Tarification adaptée au marché local : modèle freemium / SaaS facturable en FCFA.
+Service à valeur ajoutée : accompagnement par H&C Group (Agiltym pour le conseil, H&C Executive Education pour la formation des utilisateurs).
+2. Cadre méthodologique transverse
+2.1 Notion de "template sectoriel"
+Le template sectoriel est l'unité fondamentale de l'outil. Il agrège tout ce qui rend un secteur distinct des autres : ses inputs spécifiques, ses règles de calcul, sa structure d'outputs, ses indicateurs de performance et ses normes applicables. Un template est composé de cinq couches :
+Couche
+Contenu
+Exemple BTP
+Exemple Banque
+1. Identité
+Nom, version, zone géographique, normes applicables
+BTP-Bâtiments-UEMOA-v1
+Banque-Universelle-IFRS-v1
+2. Hypothèses
+Liste structurée d'inputs par catégorie
+~70-80 paramètres
+120+ paramètres
+3. Règles de calcul
+Formules métier, agrégations, contraintes
+POC, calcul RG, BFR projets
+NIM, ECL IFRS 9, coût du risque
+4. Structure outputs
+P&L, bilan, trésorerie, KPIs, dashboards
+P&L par chantier
+Bilan bancaire, ratios prudentiels
+5. Métadonnées
+Plans de comptes, mapping IFRS/SYSCOHADA
+Plan SYSCOHADA chap. 6-7
+Plan bancaire BCEAO
+2.2 Architecture conceptuelle des données
+Le modèle de données pivot articule cinq entités principales. Cette structure est fondamentale : elle conditionne la robustesse, la traçabilité et l'extensibilité de l'outil.
+Entité 1 — Project (Projet de modélisation)
+Identifiant unique, propriétaire, droits d'accès, scénarios actifs
+Référence au template sectoriel utilisé
+Horizon de modélisation (n années, granularité mensuelle / trimestrielle / annuelle)
+Devise principale, devise de reporting alternative, taux de change
+Norme comptable principale (SYSCOHADA ou IFRS), normes secondaires
+Entité 2 — Assumption (Hypothèse paramétrable)
+Code unique stable (ex. macro.inflation, commercial.hit_rate)
+Catégorie sectorielle, libellé, unité, format d'affichage
+Valeurs par période (vecteur temporel), par scénario
+Source documentaire (référence, date, URL), commentaire utilisateur
+Règles de validation (bornes min/max, contraintes inter-hypothèses)
+Entité 3 — Calculation (Règle de calcul)
+Formule exprimée en DSL interne (ou en formules nommées de type Excel)
+Dépendances explicites vers les inputs et autres calculations
+Granularité temporelle (mensuel, trimestriel, annuel)
+Norme(s) comptable(s) concernée(s) — certaines calculations existent en double SYSCOHADA et IFRS
+Entité 4 — Output (Bloc de sortie)
+Structure tabulaire, hiérarchie de postes, niveaux d'agrégation
+Mapping vers une présentation comptable normée
+Format d'export (Excel, PDF, données JSON pour intégration BI)
+Entité 5 — Audit Trail (Journal d'audit)
+Toute modification d'hypothèse, de formule, de structure est tracée
+Utilisateur, timestamp, valeurs avant/après, motif obligatoire pour publications
+Conservation 10 ans (conformité aux obligations comptables OHADA)
+2.3 Moteur de calcul
+Le moteur de calcul est un graphe orienté acyclique (DAG) où chaque nœud représente une variable temporelle. La résolution s'effectue par tri topologique. Pour les boucles légitimes (BFR ↔ besoin de financement ↔ frais financiers ↔ résultat ↔ BFR), un solveur itératif convergent (Newton-Raphson amorti) est implémenté avec critère d'arrêt à 0,01% de variation entre itérations.
+Choix technique critique
+Le moteur de calcul doit être implémenté en deux versions : (1) version Excel-compatible — export du modèle complet sous forme de classeur fonctionnel avec formules natives ; (2) version moteur natif — calcul côté serveur en Python ou Rust pour les très gros modèles. Les deux versions doivent produire des résultats numériquement identiques à 10⁻⁶ près. Cette double implémentation est essentielle pour que les utilisateurs puissent travailler hors ligne ou intégrer le modèle dans leurs propres workflows.
+2.4 Intrants standardisés
+Tous les templates partagent un noyau d'intrants génériques, complétés par des intrants sectoriels spécifiques détaillés dans le chapitre 5.
+Intrants génériques (présents dans tous les secteurs)
+Catégorie
+Hypothèses standard
+Format
+Macro-économique
+Inflation, taux directeur, taux de change, croissance du PIB
+% par période
+Fiscalité
+Taux IS, TVA, retenues à la source, taxes spécifiques
+% par juridiction
+Horizon temporel
+Date de début, durée (années), granularité
+Date, entier, énum
+Structure capital
+Capital initial, dette long terme, dette court terme, taux d'intérêt
+FCFA, %
+RH structure
+ETP par catégorie, salaire chargé moyen, taux de croissance
+Nb, FCFA, %
+Charges fixes
+Loyer, énergie, IT, assurances, juridique, marketing
+FCFA / mois ou an
+CAPEX & amortissements
+Investissements par catégorie, durée d'amortissement
+FCFA, années
+2.5 Extrants standardisés
+Bloc d'extrant
+Périodicité
+Norme(s)
+Horizon
+Compte de résultat (P&L)
+Annuel + mensuel Y1
+SYSCOHADA + IFRS
+5 ans
+Bilan
+Annuel
+SYSCOHADA + IFRS
+5 ans
+Tableau de flux de trésorerie
+Annuel + mensuel Y1
+Méthode indirecte
+5 ans
+Variation des capitaux propres
+Annuel
+SYSCOHADA + IFRS
+5 ans
+KPIs sectoriels
+Selon KPI
+—
+5 ans
+Ratios prudentiels
+Trimestriel / annuel
+CIMA, Bâle III, etc.
+5 ans
+Scénarios comparés
+Annuel
+Multi-scénarios
+Pess / Base / Opt
+Stress tests
+Annuel
+Scénarios stressés
+Sensibilités
+Notes méthodologiques
+—
+Toutes hypothèses
+Annexe
+2.6 Cycle de vie d'un modèle
+Un modèle suit un cycle de vie en six phases. L'outil accompagne et trace chaque phase :
+Initialisation : sélection du template sectoriel, paramétrage initial des hypothèses, validation de cohérence.
+Construction : saisie ou import des hypothèses détaillées, ajustement des règles de calcul si nécessaire.
+Validation : contrôle des cohérences (équilibres comptables, ratios prudentiels, bornes économiques).
+Scénarisation : déclinaison des scénarios pessimiste, base, optimiste ; stress tests réglementaires.
+Publication : génération des livrables (PDF, Excel, présentations), signature numérique, partage.
+Suivi & reforecast : comparaison réel vs budget, mises à jour périodiques, versioning automatique.
+3. Référentiel des critères de modélisation universels
+Ce chapitre définit la grille de critères qui permet à l'outil de positionner correctement un modèle dans son contexte sectoriel, géographique et réglementaire. Ces critères sont saisis à l'initialisation d'un projet et déterminent la suite des règles applicables.
+3.1 Le secteur d'activité
+Le secteur est le premier critère structurant. L'outil propose une taxonomie à deux niveaux (secteur principal, sous-secteur) compatible avec la nomenclature NAICS et l'ISIC, complétée par des libellés métier locaux.
+Secteur principal
+Sous-secteurs
+Norme comptable typique
+BTP
+Bâtiments, Routes & infrastructures, Génie civil lourd
+SYSCOHADA + IAS 11/IFRS 15
+Banque
+Universelle, Détail, Investissement, Microfinance
+BCEAO + IFRS 9/SYSCOHADA bancaire
+Assurance
+Vie, Non-Vie, Réassurance, Mixte
+CIMA + IFRS 17 (option)
+Commerce
+Grossiste, Détaillant, E-commerce, Distribution
+SYSCOHADA
+Industrie
+Agro-alimentaire, Sidérurgie, Chimie, Textile, Pharma
+SYSCOHADA + IAS 2
+Fintech
+Paiement, Lending, Wealthtech, Insurtech, RegTech
+SYSCOHADA / IFRS
+Services
+Conseil, Ingénierie, IT, RH, Communication, BPO
+SYSCOHADA / IFRS 15
+Santé
+Hôpitaux, Cliniques, Laboratoires, Imagerie
+SYSCOHADA + adaptations
+ONG
+Internationale, Locale, Confessionnelle, Réseaux
+SYSCOHADA OBNL + bailleurs
+3.2 Le type de produit ou service
+Le second critère est la nature du revenu généré. Cette typologie détermine la mécanique de reconnaissance du chiffre d'affaires et la structure du BFR.
+Type de revenu
+Mécanique de reconnaissance
+Secteurs concernés
+Vente de biens
+À la livraison / transfert de contrôle
+Commerce, Industrie
+Prestation de services ponctuelle
+À la réalisation
+Services, Santé
+Contrats long terme
+À l'avancement (POC, IFRS 15)
+BTP, Ingénierie
+Abonnement / récurrent
+Étalé sur la période de service
+Fintech, SaaS, Services
+Marge d'intermédiation
+Sur chaque transaction
+Banque, Fintech paiement
+Primes & sinistres
+Comptabilité technique CIMA / IFRS 17
+Assurance
+Subventions & dons
+Selon conditions contractuelles bailleur
+ONG, Santé publique
+Royalties / licences
+À l'usage ou à la signature selon contrat
+Services, Industrie
+3.3 La taille de l'entité
+La taille structure le niveau de granularité requis pour la modélisation. Une TPE n'a pas besoin du même niveau de détail qu'une grande entreprise multi-filiales.
+Catégorie
+Effectif
+CA annuel
+Granularité conseillée
+Micro / TPE
+≤ 10
+< 500 M FCFA
+Annuelle, P&L simplifié
+Petite
+11 à 50
+0,5 à 5 Md FCFA
+Annuelle, mensuelle Y1
+Moyenne (PME)
+51 à 200
+5 à 30 Md FCFA
+Mensuelle Y1, trimestrielle Y2-Y5
+Intermédiaire (ETI)
+201 à 1000
+30 à 200 Md FCFA
+Mensuelle Y1-Y2, annuelle après
+Grande entreprise
+> 1000
+> 200 Md FCFA
+Mensuelle complète, multi-entités
+3.4 Le business model
+Le business model détermine les dynamiques d'acquisition client, de monétisation et de scalabilité. C'est un critère essentiel pour calibrer les KPIs sectoriels.
+Business model
+Caractéristiques économiques
+KPIs critiques
+B2B projets
+Cycles longs, gros tickets, ROI client
+Backlog, hit-rate, marge chantier
+B2B récurrent
+ARR, retention, expansion
+ARR, NRR, CAC, LTV
+B2C transactionnel
+Volume, panier moyen, fréquence
+AOV, CAC, LTV, churn
+B2C abonnement
+Acquisition + rétention
+MRR, ARPU, churn, LTV
+Marketplace
+Take rate sur GMV
+GMV, take rate, frequency
+Plateforme (multi-side)
+Effets de réseau
+Cross-side, time-to-monetize
+Bancaire dépôt-crédit
+NIM, ratio prudentiel
+NIM, ROE, coût risque, CET1
+Assurance
+Ratio combiné, marge solvabilité
+Loss ratio, expense ratio, marge
+ONG bailleurs
+Cycle projet, restricted/unrestricted
+Taux exécution, overhead ratio
+3.5 La géographie et la zone monétaire
+La géographie détermine la devise, les normes applicables, la fiscalité, le coût du capital et le risque pays. L'outil distingue cinq zones principales :
+Zone UEMOA (8 pays — Bénin, Burkina Faso, Côte d'Ivoire, Guinée-Bissau, Mali, Niger, Sénégal, Togo) : FCFA XOF, BCEAO, SYSCOHADA, CIMA, OHADA
+Zone CEMAC (6 pays — Cameroun, Centrafrique, Congo, Gabon, Guinée Équatoriale, Tchad) : FCFA XAF, BEAC, SYSCOHADA, CIMA, OHADA
+Autres pays OHADA non-CFA (Guinée Conakry, Comores) : GNF, KMF, SYSCOHADA
+International francophone (Maghreb, France, Belgique, Canada) : Normes IFRS et locales
+International (USD) : États-Unis, autres juridictions — IFRS ou US GAAP, monnaie locale
+3.6 La structure juridique et fiscale
+Forme juridique
+Caractéristiques fiscales
+Spécificités modélisation
+SA OHADA
+IS standard, taxe sur dividendes
+Cap. social ≥ 10 M FCFA, gouvernance complète
+SAS OHADA
+IS standard
+Flexibilité gouvernance, cap. variable
+SARL OHADA
+IS standard
+Cap. social ≥ 1 M FCFA
+GIE OHADA
+Transparence fiscale partielle
+Pas de capital, but lucratif limité
+Établissement de crédit
+Régime BCEAO, taxe TAF
+Ratio Bâle, capital min réglementaire
+Compagnie d'assurance CIMA
+Régime fiscal spécifique
+Capital min CIMA, provisions techniques
+ONG / Association OHADA
+Exonération partielle
+Restricted/unrestricted, traçabilité bailleurs
+Inc. (Delaware) / LLC US
+IS fédéral + état, plan stocks
+Cap table multi-classes, vesting
+3.7 L'horizon et la granularité temporelle
+L'horizon doit refléter à la fois la nature du business et l'objectif du modèle (planning stratégique, due diligence, recherche de financement).
+Objectif
+Horizon typique
+Granularité Y1
+Granularité Y2+
+Plan d'affaires stratégique
+5 à 10 ans
+Mensuelle
+Annuelle
+Levée de fonds Series A/B
+5 ans
+Mensuelle
+Trimestrielle Y2, annuelle après
+Plan de trésorerie court terme
+12 à 24 mois
+Hebdomadaire ou mensuelle
+Mensuelle
+Budget annuel
+1 an
+Mensuelle
+—
+Modèle d'acquisition (M&A)
+5 à 7 ans
+Annuelle
+Annuelle
+Modèle prudentiel (banque/assu)
+3 à 5 ans
+Trimestrielle
+Annuelle
+4. Référentiels normatifs et fiscaux par zone
+4.1 SYSCOHADA Révisé (2017)
+Le Système Comptable OHADA Révisé, applicable depuis le 1er janvier 2018, est le référentiel comptable obligatoire pour toutes les entités exerçant dans les 17 États membres de l'OHADA. Il s'articule autour de quatre composantes que l'outil doit intégrer :
+Le Plan Comptable Général SYSCOHADA : huit classes (1 à 8) avec une codification à 6 chiffres, intégrant les ajustements IFRS sur les normes critiques (revenus, leasing, instruments financiers)
+Les états financiers normalisés : Bilan, Compte de résultat, Tableau des flux de trésorerie (TFT), Notes annexes, État supplémentaire statistique
+Le système normal et le système minimal de trésorerie (SMT) pour les TPE
+Les obligations de production : États financiers annuels, déclaration statistique et fiscale (DSF), dépôt au CEPICI, RCCM ou équivalent national
+Convergence SYSCOHADA / IFRS
+Le SYSCOHADA Révisé a convergé significativement vers les IFRS sur plusieurs sujets clés : reconnaissance du revenu (IFRS 15), traitement des contrats de location (IFRS 16 partiellement), instruments financiers (IFRS 9 dans le SYSCOHADA bancaire), provisions et passifs éventuels (IAS 37). Pour autant, des divergences persistent (amortissements dégressifs spécifiques, traitement des écarts de change, immobilisations incorporelles). L'outil doit gérer les deux référentiels et expliciter les ponts.
+4.2 IFRS (International Financial Reporting Standards)
+Les IFRS sont obligatoires pour les entités cotées et les établissements financiers de plusieurs juridictions. Pour les autres, elles sont souvent appliquées par option (filiales de groupes internationaux, levées de fonds internationales). L'outil doit couvrir les normes suivantes :
+Norme IFRS
+Sujet
+Secteurs critiques
+IFRS 9
+Instruments financiers (ECL, classification)
+Banque, Fintech lending
+IFRS 15
+Reconnaissance du revenu (5 étapes)
+Tous, particulièrement BTP, SaaS
+IFRS 16
+Contrats de location (right-of-use, lease liability)
+Tous, particulièrement retail, restauration
+IFRS 17
+Contrats d'assurance (CSM, fulfilment CF)
+Assurance
+IAS 2
+Stocks (valorisation, dépréciation)
+Industrie, Commerce
+IAS 12
+Impôts sur le résultat (différés)
+Tous
+IAS 19
+Avantages du personnel (engagements retraite)
+Tous
+IAS 36
+Dépréciation d'actifs (goodwill, immobilisations)
+Tous, particulièrement M&A
+IAS 37
+Provisions, passifs et actifs éventuels
+Tous, BTP, Litiges
+4.3 Cadre CIMA (Assurance)
+Le Code des Assurances CIMA (Conférence Interafricaine des Marchés d'Assurances) régit l'activité d'assurance dans 14 États d'Afrique francophone. Il impose un cadre prudentiel et technique strict que l'outil doit intégrer pour le secteur assurance.
+Composantes du cadre CIMA
+Régime des provisions techniques : provisions mathématiques (Vie), provisions pour sinistres à payer (Non-Vie), provisions pour primes non acquises, provisions pour risques en cours
+Marge de solvabilité réglementaire : minimum exigé en fonction du chiffre d'affaires (Non-Vie) ou des provisions mathématiques (Vie)
+Capital minimum : 5 milliards FCFA pour les sociétés Vie, 5 milliards FCFA pour les sociétés Non-Vie (réforme 2019-2024)
+Cantonnement des placements admis en représentation des engagements réglementés
+Reporting trimestriel (états statistiques et comptables — ESC) et annuel détaillé
+Règlement Trésor exigible (RTE) : disponibilité immédiate pour règlement des sinistres
+4.4 Cadre BCEAO / BEAC (Banque)
+Les banques de la zone UEMOA sont régies par la BCEAO et la Commission Bancaire de l'UMOA. Celles de la zone CEMAC par la BEAC et la COBAC. Les cadres prudentiels convergent vers Bâle II/III avec des adaptations.
+Ratio prudentiel
+Niveau réglementaire UEMOA
+Norme Bâle III
+Solvabilité globale (CAR)
+≥ 11,5%
+≥ 10,5% (avec coussin conservation)
+Tier 1 (CET1)
+≥ 8,5%
+≥ 7,0% (avec coussins)
+Ratio de levier
+≥ 3%
+≥ 3%
+LCR (liquidité 30j)
+≥ 100%
+≥ 100%
+NSFR (financement stable)
+≥ 100%
+≥ 100%
+Limite grand risque
+≤ 25% des FP
+≤ 25% Tier 1
+Réserves obligatoires BCEAO
+3% des dépôts à vue
+—
+4.5 Fiscalité comparée UEMOA / CEMAC / International
+Impôt
+UEMOA (moyenne)
+CEMAC (moyenne)
+France
+USA
+Impôt sur les sociétés (IS)
+25-30%
+28-35%
+25%
+21% fédéral
+TVA standard
+18%
+18-19,25%
+20%
+Sales tax variable
+Retenue à la source dividendes
+10-15%
+15-20%
+30%
+30% (sauf treaty)
+Retenue services non-rés.
+10-25%
+15-25%
+—
+30%
+Patente / impôt sur le BIC
+Variable
+Variable
+—
+—
+Taxe sur opérations financières (TAF)
+10-17%
+10-15%
+—
+—
+Charges sociales employeur
+16-20%
+18-23%
+~45%
+7,65% (FICA)
+Note pratique sur la fiscalité
+Les taux d'IS varient sensiblement au sein même de chaque zone (ex. Côte d'Ivoire 25% vs Sénégal 30% en UEMOA ; Gabon 30% vs Cameroun 33% en CEMAC). De plus, certains régimes spéciaux existent : zones franches (taux réduits), entreprises minières (régime forfaitaire), opérateurs télécoms (taxes additionnelles), institutions financières (taxes spécifiques). L'outil doit permettre de gérer ces particularités via des règles fiscales par pays et par secteur.
+4.6 Normes OHADA non-comptables impactant la modélisation
+Acte uniforme sur les sûretés (cautions, hypothèques, nantissements) — impact sur le coût du financement
+Acte uniforme sur le recouvrement des créances — délais procéduraux, impact DSO
+Acte uniforme sur les procédures collectives — risques de défaillance dans modèles de crédit
+Acte uniforme sur les sociétés commerciales et le GIE — gouvernance, distribution de dividendes
+Acte uniforme sur le droit commercial général — contrats commerciaux, agence commerciale
+Acte uniforme sur le droit du travail (en cours d'harmonisation) — charges sociales, indemnités
+5. Spécifications par secteur
+Ce chapitre constitue le cœur opérationnel du document. Chaque fiche sectorielle suit une structure standardisée à neuf rubriques permettant à l'équipe de développement d'implémenter le template correspondant :
+Description du secteur et de ses dynamiques économiques
+Sous-secteurs et variantes business
+Spécificités fiscales et réglementaires
+Modèle de revenus et mécanique de reconnaissance
+Structure de coûts type
+Hypothèses clés (inputs paramétrables)
+Règles de calcul critiques (formules métier)
+KPIs et indicateurs sectoriels
+Structure du template (feuilles, modules, livrables)
+5.1 BTP — Bâtiments, Travaux Publics, Génie Civil
+Description du secteur
+Le secteur BTP couvre la construction de bâtiments (logements, tertiaire, équipements publics), les travaux publics (routes, ponts, aménagements urbains) et le génie civil lourd (barrages, ports, centrales). En zone UEMOA/CEMAC, ce secteur est porté principalement par la commande publique (40 à 70% du volume selon les pays) et financé par les bailleurs internationaux (BAD, Banque Mondiale, BID, AFD, fonds chinois).
+Sous-secteurs et variantes
+Sous-secteur
+Marge brute typique
+Cycle moyen
+BFR / CA (jours)
+Bâtiments publics
+12-16%
+12-24 mois
+90-120
+Bâtiments privés / promotion
+15-22%
+18-30 mois
+60-90
+Routes & infrastructures
+10-14%
+18-36 mois
+100-150
+Génie civil lourd
+8-12%
+24-48 mois
+120-180
+Second œuvre spécialisé
+15-25%
+3-9 mois
+60-90
+Spécificités fiscales et réglementaires
+IS standard zone UEMOA/CEMAC, parfois précompte de 2 à 5% sur les paiements État (acompte d'IS)
+Retenue à la source sur les paiements publics : 1,5 à 5% selon les pays
+TVA sur travaux : 18% (UEMOA), récupérable sur intrants ; certains marchés exonérés (BAD, BM)
+Régime fiscal des cautions bancaires : commissions déductibles ; contre-garanties non capitalisables
+Patente municipale variable selon CA, parfois lourde sur grands projets
+Charges sociales spécifiques BTP : caisse de retraite complémentaire, taxe formation, médecine du travail
+Modèle de revenus et mécanique de reconnaissance
+Reconnaissance du revenu à l'avancement (Percentage of Completion — POC) selon IFRS 15 / SYSCOHADA. Le revenu est reconnu en fonction du pourcentage d'avancement des travaux, mesuré par la méthode des coûts encourus (coûts réels / coûts totaux estimés) ou par la méthode du jalon physique (volume produit / volume total).
+Décalages P&L vs Trésorerie
+Le BTP présente le plus grand écart entre comptable et cash : (1) Avance de démarrage (10-20%) reçue à signature → cash +, P&L = 0 ; (2) Décompte mensuel certifié → CA reconnu, encaissement +90 à +180j ; (3) Retenue de garantie (5-10%) prélevée sur chaque décompte, libérée +12 mois après réception. Le modèle doit séparer rigoureusement CA reconnu et flux d'encaissement.
+Structure de coûts type
+Poste
+% des coûts directs
+Commentaire
+Matériaux
+30-40%
+Ciment, acier, agrégats — exposition prix inflation
+Main d'œuvre directe
+20-30%
+Ouvriers, chefs d'équipe — variable selon mécanisation
+Sous-traitance
+15-30%
+Lots techniques (électricité, plomberie, climatisation)
+Matériel & engins
+8-15%
+Amortissement + location + carburant + maintenance
+Frais de chantier
+5-10%
+Installation, encadrement, sécurité, base-vie
+Hypothèses clés (intrants paramétrables)
+Pipeline commercial : nombre d'AO soumis / an, hit-rate, valeur moyenne chantier, durée moyenne
+Backlog initial (carnet de commandes à l'ouverture)
+Marge brute chantier visée par sous-secteur, avenants & révision prix (% du marché)
+Décomposition coûts directs : matériaux, MOD, ST, matériel, frais de chantier
+Sous-traitance : mark-up retenu, part en cotraitance, quote-part groupements, RG sur ST
+BFR : avance démarrage, retenue garantie, délai libération RG, DSO Etat, DPO fournisseurs, DPO ST
+Cautions bancaires : soumission, restitution avance, bonne fin, retenue garantie, commission annuelle, contre-garantie cash
+Parc matériel : valeur initiale, CAPEX annuel, durée amort, coût location, OPEX, taux utilisation
+Masse salariale structure : ETP par catégorie (direction, BE, encadrement, support), salaires chargés
+Règles de calcul critiques
+Calcul
+Formule type
+Norme
+% avancement (POC)
+Coûts encourus / Coûts totaux estimés
+IFRS 15
+CA reconnu (mois)
+% avancement × Valeur marché × Δ avancement
+IFRS 15 / SYSCOHADA
+Retenue garantie prélevée
+Décompte brut × taux RG
+Contractuel
+Encaissement effectif
+Décompte net (n - DSO/30)
+Flux
+Encours caution RG
+RG prélevée cumulée non libérée
+Hors bilan
+Coût commission cautions
+Encours moyen × commission annuelle
+P&L
+BFR Total
+Créances + Stocks + RG cum + Contre-gar - Dettes fourn - Avances reçues
+Bilan
+KPIs et indicateurs sectoriels
+Activité : CA, croissance YoY, backlog fin de période, book-to-bill, couverture backlog (mois), hit-rate AO
+Rentabilité : marge brute chantier (%), marge EBITDA (%), marge nette (%), résultat par chantier
+BFR/Cash : BFR/CA en jours, DSO réel, total encours cautions, coût cautions/CA, FCF
+Structure financière : charges fixes/CA, FF/CA, couverture intérêts (EBITDA/FF), gearing
+Productivité : CA/ETP structure, CA/chantier moyen, taux utilisation engins
+Structure du template BTP
+Le template BTP comporte 14 feuilles : Notice, Hypothèses, Pipeline & Backlog, Portefeuille chantiers, Décomptes & encaissements, BFR & cautions, Sous-traitance & cotraitance, Parc matériel, Charges fixes & RH, CAPEX & Amortissements, P&L, Trésorerie, KPIs Dashboard, Scénarios. Référence : un modèle Excel complet est livré en annexe.
+5.2 Banque (IFRS et SYSCOHADA bancaire)
+Description du secteur
+Le secteur bancaire en zone UEMOA/CEMAC est régi par la BCEAO (UMOA) ou la BEAC (CEMAC), avec des superviseurs prudentiels (Commission Bancaire UMOA, COBAC). Il est caractérisé par un nombre limité d'acteurs (40 à 60 banques par zone), une rentabilité élevée (ROE moyen 15-20%) et une concentration sur les grands corporates et le crédit à la consommation. La banque universelle représente la forme dominante, complétée par des banques spécialisées (microfinance, leasing, factoring).
+Sous-secteurs et variantes
+Sous-secteur
+Caractéristiques
+Coefficient d'exploitation
+Banque universelle
+Tous segments, retail + corporate + invest
+55-70%
+Banque de détail
+Particuliers, PME, crédit conso
+60-75%
+Banque d'affaires / corporate
+Grands corporates, financements structurés
+40-55%
+Banque d'investissement
+Trading, capital markets, M&A
+60-75%
+Microfinance (institution)
+TPE, micro-entrepreneurs
+70-85%
+Banque digitale
+100% mobile/online, agile
+30-50% à maturité
+Spécificités fiscales et réglementaires
+Régime fiscal bancaire : IS standard (25-35% selon pays) ; Taxe sur les opérations financières (TAF/TOB) 10-17% — non récupérable, affecte directement le coût de la collecte
+Réserves obligatoires BCEAO : 3% des dépôts à vue (non rémunérées) — coût d'opportunité à modéliser
+Capital minimum réglementaire : 10 Md FCFA (UMOA), 10 Md FCFA (CEMAC) — réforme en cours pour relever à 20 Md
+IFRS obligatoire pour les états consolidés des groupes bancaires depuis 2018 (UMOA) / 2019 (CEMAC)
+SYSCOHADA bancaire (PCB-2020) en transition vers convergence IFRS
+Surveillance Bâle III en application progressive : pilier 1 (CAR, levier, LCR, NSFR), pilier 2 (ICAAP, ILAAP), pilier 3 (informations financières)
+Modèle de revenus
+Le revenu bancaire se décompose en trois flux principaux qu'il faut modéliser séparément :
+Type de revenu
+Composantes
+Mécanique
+Marge nette d'intérêts (MNI)
+Intérêts sur crédits - Intérêts sur dépôts/dette
+Stock moyen × taux
+Commissions nettes
+Commissions opérations, monétique, garanties, FX
+Volume × tarif
+Résultat des opérations financières
+FX, titres, trading
+Variations valeur + flux
+Structure du bilan bancaire
+Le bilan bancaire est radicalement différent d'un bilan d'entreprise. L'outil doit proposer une structure spécifique :
+Actif
+Passif
+Caisse & banques centrales (incl. réserves obligatoires)
+Dépôts à vue (DAV)
+Créances interbancaires
+Dépôts à terme (DAT) & comptes épargne
+Portefeuille titres (négociation, placement, investissement)
+Emprunts interbancaires
+Crédits clientèle (court terme, moyen et long terme)
+Emprunts obligataires & subordonnés
+Immobilisations
+Provisions pour risques
+Autres actifs
+Capitaux propres (capital, réserves, résultat)
+Hypothèses clés (intrants paramétrables)
+Volumétrie : nombre de clients par segment, croissance, encours moyens par produit
+Taux d'intérêt : taux sur crédits (par durée et qualité), taux sur dépôts (par type)
+Coût des ressources : taux moyen de la collecte (DAV non rémunérés vs DAT)
+Coût du risque : taux de provisionnement IFRS 9 (Stage 1 / 2 / 3), taux de recouvrement
+Commissions : tarif moyen par opération, volume d'opérations par segment et produit
+Ratios prudentiels cibles : CET1, CAR, levier, LCR, NSFR (avec marges de sécurité)
+Réserves obligatoires : taux BCEAO sur DAV, DAT
+RWAs (actifs pondérés des risques) : pondérations par classe d'actif selon Bâle
+Coût opérationnel : RH (effectifs et salaires par catégorie), IT, immobilier, externalisation
+Investissements : digitalisation, agences, équipements
+Règles de calcul critiques
+Calcul
+Formule type
+Norme
+Net Interest Margin (NIM)
+MNI / Actifs moyens productifs
+Standard
+Coût du risque IFRS 9 Stage 1
+PD 12 mois × LGD × EAD × encours
+IFRS 9
+Coût du risque IFRS 9 Stage 2/3
+PD lifetime × LGD × EAD × encours
+IFRS 9
+Ratio CET1
+Fonds propres durs / RWAs
+Bâle III
+LCR (Liquidity Coverage Ratio)
+HQLA / Sorties nettes 30j
+Bâle III
+ROE
+Résultat net / Fonds propres moyens
+Standard
+Coefficient d'exploitation
+Charges générales / PNB
+Standard
+Coût des dépôts
+Intérêts sur dépôts / Encours moyen
+Standard
+PNB
+MNI + Commissions + Résultat opérations financières
+Bancaire
+KPIs et indicateurs sectoriels
+Performance : ROE, ROA, PNB, RBE, résultat net, coefficient d'exploitation
+Marge : NIM, marge sur intérêts, taux de marge sur commissions
+Risque : coût du risque (% encours), créances douteuses (CDL) / crédits totaux, taux de couverture
+Solvabilité : CET1, Tier 1, CAR, ratio de levier
+Liquidité : LCR, NSFR, ratio crédits/dépôts
+Croissance : croissance crédits, croissance dépôts, croissance PNB
+Productivité : PNB / ETP, encours moyen par client, agence
+Structure du template Banque
+Le template Banque comporte 15 feuilles : Notice, Hypothèses macro & fiscales, Hypothèses commerciales (volumétrie clientèle), Crédits & taux, Dépôts & coût de la collecte, Bilan bancaire pivot, Calcul du PNB (MNI + commissions + opérations financières), Charges générales d'exploitation & RH, Coût du risque IFRS 9, P&L bancaire, Ratios prudentiels Bâle III, KPIs Dashboard, Stress tests prudentiels, Tableau de flux, Scénarios.
+5.3 Assurance Zone CIMA (Vie et Non-Vie)
+Description du secteur
+Le marché de l'assurance en zone CIMA (14 pays d'Afrique francophone) est jeune mais en forte croissance (taux de pénétration <2% du PIB). Il est segmenté en deux branches structurellement distinctes : la Non-Vie (IARD, automobile, transport, santé) et la Vie (épargne, prévoyance, retraite). Les compagnies sont régies par le Code des Assurances CIMA harmonisé, avec une supervision par la CRCA (Commission Régionale de Contrôle des Assurances) et un capital minimum porté à 5 Md FCFA (réforme 2019-2024).
+Sous-secteurs et variantes
+Sous-secteur
+Type de risque
+Marge technique typique
+Assurance Vie individuelle
+Épargne + prévoyance
+8-15%
+Assurance Vie groupe (collective)
+Prévoyance employeurs
+5-10%
+IARD automobile
+Responsabilité civile + dommages
+3-8%
+IARD entreprises (multirisque)
+Incendie, RC, dommages
+10-18%
+IARD transports & maritime
+Marchandises, corps
+8-15%
+Santé / Maladie
+Frais médicaux, hospitalisation
+5-12%
+Réassurance
+Cession de risques
+Spread / commission
+Spécificités réglementaires CIMA
+Provisions techniques obligatoires : provisions mathématiques (PM) en Vie, provision pour sinistres à payer (PSAP) en Non-Vie, provision pour primes non acquises (PPNA), provision pour risques en cours (PREC)
+Marge de solvabilité minimale réglementaire : un % du chiffre d'affaires (Non-Vie) ou un % des PM (Vie)
+Capital minimum : 5 Md FCFA, en cours de relèvement (jusqu'à 10 Md FCFA selon réforme finale)
+Cantonnement des placements en représentation des engagements réglementés (immobilier, obligations d'État, dépôts bancaires, actions cotées avec limites)
+Reporting trimestriel (ESC — états statistiques et comptables) et annuel détaillé à la CRCA
+Règlement Trésor Exigible (RTE) : placements liquides de premier rang disponibles pour règlement immédiat des sinistres
+Limites de réassurance par traité : conservation max, cession à des réassureurs agréés
+Spécificités fiscales
+IS standard CIMA, parfois avec taux préférentiel branches Vie longue durée
+TVA non applicable sur les primes d'assurance (exonération générale)
+Taxes parafiscales sur primes : taxe d'assurance variable selon branches et pays
+Régime fiscal des PM : provisions techniques déductibles selon décrets CIMA
+IFRS 17 en option (en France obligatoire 2023+) — adoption progressive en zone CIMA
+Modèle de revenus et structure du P&L technique
+Le P&L assurance est structuré différemment d'un P&L classique. Il distingue un compte technique (activité d'assurance) et un compte non-technique (placements, résultat global).
+Poste du compte technique
+Vie
+Non-Vie
++ Primes acquises (nettes de réassurance)
+Oui
+Oui (primes émises ± Δ PPNA)
++ Produits des placements affectés
+Oui (essentiel)
+Oui (marginal)
+- Charges sinistres (payées + Δ PSAP)
+Oui (capitaux décès)
+Oui (principal poste)
+- Variation des PM
+Oui (très significatif)
+—
+- Participation aux bénéfices (PB) versée
+Oui (Vie épargne)
+—
+- Frais d'acquisition (commissions agents)
+Oui
+Oui
+- Frais d'administration & gestion
+Oui
+Oui
+= Résultat technique
+Oui
+Oui
+Distinction Vie vs Non-Vie
+En Vie, le poids des PM (provisions mathématiques) est tel qu'il fait basculer l'économie du modèle vers les placements : un assureur Vie est avant tout un gestionnaire d'actifs adossés à des passifs longs. En Non-Vie, c'est inverse : la qualité de la souscription (loss ratio) prime, les placements ne servent qu'à couvrir les frais de gestion. L'outil doit gérer ces deux logiques en parallèle.
+Hypothèses clés (intrants paramétrables)
+Vie : nombre de polices vendues par produit (mixte, terme fixe, capitalisation, retraite), prime moyenne, durée moyenne, taux de chute (lapse rate), taux de rachat
+Vie : table de mortalité applicable, taux technique des PM, table actuarielle, rendement minimum garanti
+Vie : participation aux bénéfices contractuelle (% du résultat technique)
+Non-Vie : portefeuille par branche, primes moyennes, croissance, taux de renouvellement
+Non-Vie : sinistralité (fréquence × coût moyen par branche), loss ratio cible, IBNR ratio
+Frais d'acquisition : commissions agents/courtiers (%), bonus, frais marketing
+Frais de gestion : RH, IT, immobilier, externalisation des sinistres
+Réassurance : traité par branche, taux de cession, commission de réassurance perçue
+Placements : allocation cible (immobilier, obligations, dépôts, actions), rendement attendu par classe
+Capital initial, dividendes versés, augmentations de capital prévues
+Règles de calcul critiques
+Calcul
+Formule type
+Norme
+PPNA fin de période
+Primes émises × (1 - n/12) au prorata temporis
+CIMA art. 334-7
+PSAP
+Sinistres déclarés non encore réglés + IBNR estimé
+CIMA art. 334-12
+PM (Vie)
+Σ engagements actualisés au taux technique - primes futures
+Actuarielle
+Loss ratio
+Sinistres + Δ PSAP / Primes acquises
+Standard
+Expense ratio
+Frais acquisition + frais gestion / Primes acquises
+Standard
+Ratio combiné
+Loss ratio + Expense ratio
+Standard
+Marge solvabilité Non-Vie
+Max(% primes, % charges sinistres)
+CIMA
+Marge solvabilité Vie
+% PM + % capitaux sous risque
+CIMA
+Persistance Vie (12 mois)
+Polices actives à m+12 / Polices émises à m
+Standard
+Taux de surrender (rachat)
+Rachats / PM moyennes
+Standard
+KPIs et indicateurs sectoriels
+Volume : primes émises, primes acquises, croissance, parts de marché par branche
+Rentabilité technique : loss ratio, expense ratio, ratio combiné (Non-Vie), marge technique (Vie)
+Rentabilité globale : ROE, résultat net / primes acquises, RoA
+Solvabilité : marge de solvabilité (% du minimum réglementaire CIMA), couverture des engagements réglementés
+Persistance Vie : taux de persistance à 12, 24, 36 mois, taux de chute, taux de rachat
+Placements : rendement des placements, allocation, RTE / engagements
+Sinistres : fréquence, coût moyen, délai de règlement, taux d'IBNR
+Structure du template Assurance CIMA
+Le template Assurance comporte 14 feuilles : Notice, Hypothèses, Portefeuille polices (Vie + Non-Vie), Primes & cotisations, Sinistres (fréquence + coûts + IBNR), Provisions techniques (PM, PSAP, PPNA, PREC), Placements & rendements, P&L technique, P&L non-technique global, Bilan assurance, Marge de solvabilité CIMA, KPIs Dashboard, Stress prudentiel, Scénarios.
+5.4 Achats-Vente, Commerce et Distribution
+Description du secteur
+Le commerce et la distribution couvrent l'achat de biens pour revente, en B2B (grossistes, distributeurs spécialisés) ou en B2C (détaillants, e-commerce). En zone UEMOA/CEMAC, ce secteur est dominé par l'informel (60-70%), mais le secteur formel se structure rapidement avec l'émergence de chaînes (supermarchés, distribution spécialisée) et de l'e-commerce. Les marges sont sous pression continue ; la performance dépend de la rotation des stocks et de la maîtrise du BFR.
+Sous-secteurs et variantes
+Sous-secteur
+Marge brute typique
+Rotation stocks (j)
+BFR / CA (j)
+Grossiste FMCG
+8-15%
+30-60
+40-70
+Détaillant alimentaire
+20-28%
+20-40
+5-15
+Distribution spécialisée
+30-45%
+60-120
+30-60
+E-commerce pure player
+15-30%
+30-90
+Variable selon BM
+Quincaillerie & BTP retail
+15-25%
+90-180
+60-120
+Pharmacie
+20-30%
+30-60
+30-60
+Spécificités fiscales et réglementaires
+IS standard, déclaration TVA mensuelle ou trimestrielle, récupération TVA sur achats
+Régime fiscal du forfait (TPE), régime réel simplifié (PME), régime réel normal (grandes entreprises)
+Taxes douanières à l'importation (porte de sortie majeure pour la marge en zone UEMOA/CEMAC)
+Patente / contribution forfaitaire municipale variable selon surface commerciale et CA
+Pour l'e-commerce : régime fiscal du commerce électronique en émergence (transactions transfrontalières)
+Régime des stocks périssables : provisions pour dépréciation déductibles sous conditions
+Modèle de revenus et structure de coûts
+Le P&L commerce est dominé par le coût d'achat des marchandises vendues (CAMV). La structure type est la suivante :
+Poste
+% du CA (typique)
+Commentaire
+Chiffre d'affaires
+100%
+Brut, ou net des remises et retours
+- Achats consommés (CAMV)
+60-85%
+Achats + Δ stock
+= Marge brute
+15-40%
+Indicateur métier central
+- Frais de personnel
+5-15%
+Vendeurs, caissiers, manutention
+- Loyers & immobilier
+3-10%
+Pondéré par localisation
+- Marketing & communication
+1-5%
+Plus élevé en e-commerce (15-25%)
+- Logistique & transport
+2-8%
+Plus élevé en e-commerce et grossiste
+- Autres charges externes
+2-5%
+Énergie, télécoms, IT
+= EBITDA
+3-12%
+Variable selon segment
+Hypothèses clés (intrants paramétrables)
+Catalogue produits / familles : nombre de références, prix moyen, marge brute par famille
+Volume : ventes mensuelles par canal (physique, online, B2B, export), saisonnalité
+Marketing : budget acquisition, CAC, taux de conversion, fréquence d'achat
+Politique commerciale : remises, soldes, promotions, programme fidélité
+Stocks : rotation cible par famille, niveau de sécurité, taux de péremption / casse
+Achats : DPO fournisseurs, conditions de règlement (escompte, échéance), monnaie d'achat (FX si import)
+Logistique : entrepôts (capacité, coût), transport (j+1, j+3), retours (taux, coût)
+Réseau : nombre de points de vente, surface moyenne, CA/m², staff/point de vente
+E-commerce spécifique : visiteurs, taux de conversion, panier moyen, taux de retour
+Règles de calcul critiques
+Calcul
+Formule type
+Application
+Marge brute %
+(CA - CAMV) / CA
+Indicateur clé
+Rotation stocks (jours)
+Stock moyen / CAMV × 365
+Cash management
+DSO clients
+Créances clients / CA × 365
+Surtout B2B et grossiste
+DPO fournisseurs
+Dettes fournisseurs / Achats × 365
+BFR négatif possible
+BFR / CA (jours)
+(Stocks + Créances - Fournisseurs) / CA × 365
+Indicateur clé
+CA / m² (retail physique)
+CA / surface commerciale m²
+Productivité retail
+GMV / Take rate (marketplace)
+Volume × take rate
+Modèle plateforme
+LTV / CAC (e-commerce)
+(Marge × fréquence × durée) / coût acquisition
+Unit economics
+KPIs et indicateurs sectoriels
+Activité : CA, croissance YoY, croissance comparable (LFL), parts de marché
+Marge : marge brute %, marge brute par famille / SKU / point de vente
+Opérations : rotation des stocks, taux de service, taux de rupture, taux de casse / démarque
+BFR : DSO, DPO, BFR/CA en jours, cycle d'exploitation
+Réseau (physique) : CA/m², CA/PV, CA/ETP
+E-commerce : visiteurs, taux de conversion, panier moyen, AOV, fréquence, churn, LTV/CAC
+Multi-canal : part online vs offline, click-and-collect ratio
+Structure du template Commerce
+Le template Commerce comporte 13 feuilles : Notice, Hypothèses, Catalogue & prix, Plan commercial (volume + saisonnalité), Achats & stocks, Réseau (PV physiques) ou E-commerce (acquisition + conversion), BFR détaillé, Charges fixes & RH, CAPEX & amortissements, P&L, Bilan, Trésorerie, KPIs Dashboard.
+5.5 Industrie et Manufacture
+Description du secteur
+L'industrie en zone UEMOA/CEMAC reste structurellement faible (≈10% du PIB en moyenne, contre 25-30% dans les économies industrialisées), mais elle est stratégique pour la souveraineté économique. Les filières dominantes sont l'agro-alimentaire (huileries, brasseries, biscuiteries, conserveries), la cimenterie et matériaux, la métallurgie / sidérurgie, le textile, la chimie et la pharmacie. La modélisation d'une entreprise industrielle exige une rigueur particulière sur la capacité, la productivité et la gestion des stocks multi-niveaux.
+Sous-secteurs et variantes
+Sous-secteur
+Intensité capitalistique
+Marge EBITDA typique
+Rotation actifs
+Agro-alimentaire (transformation)
+Moyenne-élevée
+10-20%
+Élevée
+Brasserie / boissons
+Élevée
+20-30%
+Moyenne
+Cimenterie & matériaux
+Très élevée
+20-35%
+Faible
+Sidérurgie / métallurgie
+Très élevée
+8-18%
+Faible
+Textile / confection
+Moyenne
+8-15%
+Moyenne-élevée
+Chimie / pharmacie
+Élevée
+15-25%
+Moyenne
+Sous-traitance industrielle
+Faible-moyenne
+5-12%
+Élevée
+Spécificités fiscales et réglementaires
+Régimes d'incitation à l'investissement : codes des investissements UEMOA/CEMAC (exonération IS de 5 à 10 ans, exonération droits de douane sur équipements)
+Zones économiques spéciales (ZES) : régimes fiscaux préférentiels, exonérations TVA et IS
+Régime des produits transformés localement : taux préférentiels droits de douane
+Régime des matières premières importées : exonération ou taux réduits pour activités productives
+Normes environnementales : étude d'impact, taxes pollution selon pays
+Normes qualité / certification : ISO 9001, HACCP, normes sectorielles, traçabilité
+Taxes spécifiques : ICA (Impôt Communal Additionnel), taxes parafiscales sectorielles
+Modèle de revenus et structure de coûts
+Le P&L industriel se distingue par la séparation rigoureuse entre coûts directs (variables avec la production) et coûts fixes (structure). Le coût de revient unitaire est central.
+Composante
+Type
+Imputation
+Matières premières (MP)
+Direct variable
+Au produit, à la quantité produite
+Consommables & emballages
+Direct variable
+Au produit
+Main d'œuvre directe (MOD)
+Direct variable ou semi-variable
+Au produit, au temps
+Énergie variable (process)
+Direct variable
+Au volume produit
+Amortissement équipement
+Fixe
+Structure
+MOD indirecte (maintenance, qualité)
+Semi-variable
+Frais généraux usine
+Loyers & immobilier industriel
+Fixe
+Structure
+Encadrement & supervision
+Fixe
+Structure
+Hypothèses clés (intrants paramétrables)
+Catalogue produits / SKUs : nomenclature, prix de vente, gammes
+Capacité de production : capacité théorique (machine-heures, tonnes/mois), arrêts planifiés, OEE cible
+Nomenclature & bill of materials (BOM) : MP/produit, MOD/produit, taux de chute / rebut
+Achats MP : prix, devise (souvent USD pour MP importées), DPO fournisseurs, stock de sécurité
+Stocks multi-niveaux : MP, en-cours (WIP), produits finis (PF) — quantités, valeur, rotation
+MOD : effectifs par poste, productivité (unités/heure), salaire chargé, polyvalence
+Énergie : consommation par produit, prix kWh, contrat (heures pleines/creuses)
+Maintenance : préventive, corrective, taux de panne, MTBF
+Distribution : canaux (direct vs distributeur), DSO clients, logistique
+CAPEX : ligne actuelle, extensions prévues, amortissement, maintenance immobilisée
+Règles de calcul critiques
+Calcul
+Formule type
+Application
+OEE
+Disponibilité × Performance × Qualité
+KPI industrie de référence
+Coût standard unitaire
+MP/u + MOD/u + Énergie/u + FG absorbés/u
+Pricing, marges
+Écart de prix MP
+(Prix réel - Prix standard) × Q achetée
+Contrôle de gestion
+Écart de quantité MP
+(Q réelle - Q standard) × Prix standard
+Contrôle de gestion
+Écart de productivité MOD
+(Tps réel - Tps standard) × Tx standard
+Contrôle de gestion
+Marge sur coût variable
+Prix vente - Coût variable unitaire
+Décision pricing
+Point mort (CA)
+Charges fixes / Taux marge sur CV
+Seuil de rentabilité
+Rotation MP / en-cours / PF
+Stock moyen × 365 / Consommation
+Cash management
+KPIs et indicateurs sectoriels
+Production : volume produit, taux d'utilisation capacité, OEE, taux de rebut, productivité MOD
+Coûts : coût de revient unitaire (par SKU), écarts coûts standards / réels, structure MP/MOD/FG
+Stocks : rotation MP, rotation WIP, rotation PF, taux de péremption / obsolescence
+Commercial : CA, marge brute, marge unitaire, mix produits
+Rentabilité : EBITDA, marge EBITDA, ROE, ROCE
+Trésorerie : BFR/CA (jours), FCF, couverture CAPEX
+Qualité : taux de non-conformité, taux de retour, coût qualité (interne + externe)
+Structure du template Industrie
+Le template Industrie comporte 13 feuilles : Notice, Hypothèses, Catalogue & nomenclatures, Plan de production & capacité (OEE), Achats MP & stocks MP, En-cours & produits finis, Coûts directs (MP+MOD+FG), Coûts standards & écarts, CAPEX industriel, Charges fixes & RH, P&L, Bilan, Trésorerie & KPIs.
+5.6 Fintech et services financiers numériques
+Description du secteur
+La Fintech en Afrique francophone est portée par l'inclusion financière (mobile money) et la digitalisation des paiements. Quatre sous-secteurs dominent : paiements (mobile money, wallets, agrégateurs), lending (crédit digital, BNPL, microcrédit), insurtech (assurance digitale), et wealthtech (épargne, investissement digital). Modèles SaaS B2B (RegTech, infrastructure) en croissance également. La Fintech se modélise selon les codes du SaaS et des marketplaces, avec spécificités du secteur financier.
+Sous-secteurs et variantes
+Sous-secteur
+Source de revenus
+Métriques critiques
+Paiement (mobile money, wallet)
+Commission par transaction (% ou flat)
+GMV, take rate, TPV / agent
+Lending digital
+Intérêts sur crédits décaissés
+Encours, taux de défaut, LGD, NIM
+BNPL (Buy Now Pay Later)
+Commission marchand + intérêts client
+Encours, défaut, taux acceptation
+Insurtech
+Commissions + parfois souscription
+Polices, prime moyenne, persistance
+Wealthtech
+Fees actifs sous gestion (AUM)
+AUM, fees %, retention, ARPU
+RegTech / SaaS B2B
+Abonnement, % volume traité
+ARR, NRR, churn, LTV/CAC
+Spécificités fiscales et réglementaires
+Régime BCEAO / BEAC pour les établissements de monnaie électronique (EME) : licence, capital min, ratios prudentiels
+Pour les établissements de paiement : régulation BCEAO et règles spécifiques de l'interopérabilité
+Pour le lending : selon montant et nature, régime IMF (institutions de microfinance), banques classiques, ou opérations sans collecte de dépôts
+Réglementation KYC/AML obligatoire avec coûts opérationnels significatifs
+Protection des données : RGPD européen pour cross-border, lois locales en harmonisation
+Régime fiscal : IS standard, mais possibilité de régimes start-up dans certains pays (Côte d'Ivoire, Sénégal)
+Taxe sur opérations financières (TAF) : 10-17% selon pays sur certaines opérations
+Modèle de revenus et économie unitaire
+La fintech, comme le SaaS, se modélise par cohortes et par unit economics. Le revenu est récurrent ou transactionnel. Les ratios CAC, LTV, LTV/CAC et payback period sont centraux.
+Métrique
+Définition
+Niveau d'acceptabilité
+MRR / ARR
+Monthly / Annual Recurring Revenue
+Croissance soutenable
+NRR (Net Revenue Retention)
+Revenu cohorte t / Revenu cohorte t-1
+> 100% (idéal 110-130%)
+GRR (Gross Revenue Retention)
+Revenu cohorte hors expansion
+> 90% (B2B), > 80% (B2C)
+CAC
+Coût d'acquisition d'un nouveau client
+Industry benchmark variable
+LTV
+Marge × fréquence × durée de vie client
+Élevé pour B2B SaaS
+LTV/CAC
+Lifetime value / coût acquisition
+> 3 (idéal > 5)
+CAC Payback (mois)
+CAC / (MRR × marge brute)
+< 18 mois (idéal < 12)
+Churn mensuel
+Clients perdus / clients début mois
+< 2% B2B, < 5% B2C
+Hypothèses clés (intrants paramétrables)
+Funnel d'acquisition : trafic / leads, conversion par étape, CAC par canal
+Cohortes : taille mensuelle nouvelles cohortes, courbe d'activation, courbe de retention
+Revenus : ARPU, monétisation par segment, structure des frais (fixe + variable)
+Take rate (pour paiement / marketplace) : % sur volume transactionnel (TPV)
+Volumétrie transactionnelle (TPV) : nombre de transactions, montant moyen
+Pour lending : encours décaissé, taux d'intérêt, durée moyenne, taux de défaut (PD, LGD)
+Coûts variables par transaction : frais de réseau, KYC/AML, paiement, support N1
+Coûts d'infrastructure : cloud, IT, sécurité, conformité réglementaire
+RH : tech, commerciale, support, conformité, finance — masse salariale élevée
+Capital : levées de fonds prévues, valorisation cible, runway
+Règles de calcul critiques
+Calcul
+Formule type
+Application
+ARPU
+MRR / Nb clients moyens
+Pricing & segmentation
+CAC
+(Mkt + Sales) / Nouveaux clients
+Efficacité acquisition
+LTV (récurrent)
+ARPU × Marge brute / Churn mensuel
+Justification CAC
+Take rate (paiement)
+Revenus commission / TPV
+Pricing transactionnel
+Coût risque crédit (lending)
+PD × LGD × Encours moyen
+Modèle IFRS 9 light
+Net Promoter Score (NPS)
+% promoteurs - % détracteurs
+Satisfaction & rétention
+Burn rate mensuel
+(Recettes - Dépenses) / Mois
+Suivi runway
+Runway (mois)
+Cash dispo / Burn rate
+Décision levée
+KPIs et indicateurs sectoriels
+Croissance : MRR, ARR, MoM growth, YoY growth, vélocité commerciale
+Unit economics : CAC, LTV, LTV/CAC, payback, contribution margin par client
+Engagement : DAU, MAU, DAU/MAU, fréquence, time spent, churn
+Volumétrie (paiement) : TPV, GMV, take rate, transactions/utilisateur
+Crédit (lending) : encours, NPL ratio, coût du risque, PD, LGD
+Finance : revenus, marge brute, marge contribution, burn, runway, cash zero date
+Levée : valorisation, dilution, runway post-money
+Structure du template Fintech
+Le template Fintech comporte 12 feuilles : Notice, Hypothèses, Funnel & acquisition, Cohortes & retention, Revenus & monétisation, Volumétrie transactionnelle (TPV) ou Encours crédit, Coûts variables, Charges fixes & RH, CAPEX & R&D capitalisée, P&L, Trésorerie & runway, KPIs / Unit economics.
+5.7 Entreprises de services (conseil, ingénierie, B2B)
+Description du secteur
+Le secteur des services aux entreprises (conseil, ingénierie, IT, RH, communication, BPO) repose sur la production d'expertise humaine. Sa rentabilité dépend de trois leviers : le taux d'occupation des consultants (utilization rate), le TJM (taux journalier moyen) facturé, et la pyramide hiérarchique (mix junior / sénior / manager / partner).
+Sous-secteurs et variantes
+Sous-secteur
+Modèle dominant
+Marge EBITDA
+Conseil stratégique
+Mission au forfait, TJM élevé
+20-35%
+Conseil opérationnel & management
+Mission forfait + Time & Materials
+15-25%
+Ingénierie technique
+Projets, jalons, T&M
+10-18%
+IT services (intégration, dev)
+Projets, T&M, régie
+10-20%
+BPO / outsourcing
+Forfait mensuel ou pricing au volume
+8-15%
+Communication / agences créatives
+Honoraires + commissions media
+8-18%
+RH (recrutement, formation)
+Pourcentage salaire + forfaits
+15-25%
+Spécificités fiscales et réglementaires
+IS standard ; régimes spéciaux start-ups dans certains pays
+TVA sur prestations services : 18% UEMOA, 18-19,25% CEMAC, déductible côté client B2B
+Retenue à la source non-résident : 10-25% selon pays sur facturation cross-border vers l'étranger (conventions fiscales à vérifier)
+Patente sur CA, parfois élevée pour activités intellectuelles
+Régime des stocks options et plans d'intéressement variables selon pays
+Pour les bureaux d'études techniques : agréments sectoriels obligatoires
+Modèle économique : pyramide & utilization
+L'économie d'une firme de services repose sur la combinaison de trois variables qu'il faut modéliser explicitement :
+Variable
+Définition
+Levier d'amélioration
+Utilization rate
+Jours facturés / jours ouvrables théoriques
+Pipeline commercial, plannification
+TJM facturé
+Revenu / jour facturé
+Mix client, repositionnement, expertise
+Pyramide
+Ratio juniors / séniors / managers / partners
+Effet levier : 1 partner pour N juniors
+Formule économique du service
+Revenu par consultant = Capacité jours/an × Utilization × TJM. Une firme à 60% d'utilization avec TJM 200 k FCFA et 220 jours ouvrables génère 26,4 M FCFA par consultant. La marge brute dépend du coût total (salaire chargé + overhead allouable). À taux d'utilization < 50%, la firme perd de l'argent ; à > 75% (sénior), elle est très rentable mais épuise ses équipes. L'équilibre cible se situe généralement entre 65 et 75%.
+Hypothèses clés (intrants paramétrables)
+Pyramide : effectifs par grade (junior, consultant, sénior, manager, senior manager, directeur, partner)
+Capacité : jours ouvrables / an, jours de formation, jours de R&D, jours commerciaux (non facturés)
+Utilization rate cible par grade (croissant avec l'ancienneté ou décroissant selon modèle)
+TJM par grade et par segment client (corporate, ETI, PME, secteur public)
+Mix missions : forfait vs T&M vs régie, durée moyenne, % d'avenants
+Charges salariales : salaire de base par grade, charges sociales, bonus, intéressement
+Recrutement : flux d'entrées par grade, durée de montée en compétence, taux de turnover
+Pipeline commercial : nombre de propositions, hit-rate, valeur moyenne, durée du cycle de vente
+Charges de structure : siège, IT, marketing, business development, gouvernance
+Sous-traitance & freelances : volume, mark-up appliqué
+Règles de calcul critiques
+Calcul
+Formule type
+Revenu mission
+Jours facturés × TJM (T&M) ou Forfait reconnu à l'avancement
+Capacité totale facturable
+Σ(ETP × Jours ouvrables × Utilization rate)
+Coût direct mission
+Σ(Jours × Coût journalier consultant + sous-traitance)
+Marge mission
+Revenu - Coût direct - Frais directs (déplacements)
+Marge par grade
+(TJM moyen - Coût journalier) × Jours facturés par grade
+Pricing minimum (break-even)
+Coût journalier / (Utilization × (1 - marge cible))
+KPIs et indicateurs sectoriels
+Activité : revenu total, croissance, mix forfait/T&M, mix client
+Productivité : utilization rate par grade, jours facturés / consultant, TJM moyen réalisé
+Pipeline : backlog signé, propositions en cours, hit-rate, win-rate par segment
+Rentabilité : marge brute mission, marge par grade, marge par practice, EBITDA
+RH : effectifs, taux de turnover, durée moyenne en poste, ratio managers/consultants
+Structure du template Services
+Le template Services comporte 12 feuilles : Notice, Hypothèses, Pyramide effectifs, Capacité & utilization, Pipeline commercial, Portefeuille missions, TJM & pricing, Revenus reconnus, Charges directes & RH, Charges de structure, P&L, KPIs & marges.
+5.8 Hôpitaux et établissements de santé
+Description du secteur
+Le secteur de la santé en zone UEMOA/CEMAC se structure entre hôpitaux publics (généralement déficitaires, subventionnés), cliniques privées (souvent en partenariat avec assurances santé), laboratoires d'analyses, centres d'imagerie et pharmacies hospitalières. La modélisation d'un établissement hospitalier combine logique métier (séjours, actes, plateau technique) et logique financière (revenus mixtes : assurance, mutuelle, paiement direct). L'émergence de l'AMO et de la CMU dans plusieurs pays modifie progressivement les flux.
+Sous-secteurs et variantes
+Sous-secteur
+Modèle économique
+Marge EBITDA
+Hôpital privé général
+Hospitalisation + consultations + plateau
+12-20%
+Clinique spécialisée
+Actes spécialisés (cardio, ophtalmo, etc.)
+15-25%
+Laboratoire d'analyses
+Volume d'analyses
+20-30%
+Centre d'imagerie
+Scanner, IRM, échographie, radio
+18-28%
+Pharmacie hospitalière
+Vente médicaments + dispositifs
+12-20%
+Hôpital public
+Subvention + recettes propres
+Souvent déficitaire
+Spécificités fiscales et réglementaires
+Régime fiscal partiellement exonéré dans plusieurs pays (TVA sur prestations médicales : exonérée en UEMOA, partiellement en CEMAC)
+Agréments obligatoires : ouverture, équipements lourds, biologistes médicaux, médecins-directeurs
+Tarification réglementée pour certains actes (consultations, hospitalisations standards) selon les pays
+Conventionnement avec organismes payeurs (assurances, mutuelles, AMO/CMU), grille tarifaire négociée
+Régime des médicaments : taxes spécifiques, contrôle des prix, marge réglementée
+Régime spécifique des déchets biomédicaux : coûts de traitement, taxes environnementales
+Pour les groupes hospitaliers internationaux : régime des prix de transfert
+Modèle de revenus
+Le revenu d'un établissement de santé se décompose en flux multiples qu'il faut modéliser distinctement :
+Source de revenu
+Mode de tarification
+Délai de paiement
+Hospitalisation (séjour)
+Forfait jour + actes (T2A-like)
+30-180 j (assurance)
+Consultations externes
+Tarif acte (CCAM-like)
+Comptant ou 30 j
+Actes plateau technique
+Tarif acte (imagerie, biologie, bloc)
+30-90 j
+Médicaments & DM
+Prix de vente (marge réglementée)
+Comptant
+Conventions assurances
+Tarif conventionné
+30-90 j
+AMO / CMU (selon pays)
+Tarif réglementé
+60-180 j (variable)
+Paiement direct
+Tarif public
+Comptant
+Hypothèses clés (intrants paramétrables)
+Capacité : lits installés, lits ouverts (par service), nombre de blocs opératoires, consultations programmables
+Activité : taux d'occupation par service, durée moyenne de séjour (DMS), nombre d'admissions
+Casemix : mix par DRG / service (médecine, chirurgie, obstétrique, urgences), poids économique
+Tarification : tarifs par acte, par séjour, par convention (assurance, AMO, public)
+Sources de paiement : répartition % par catégorie (assurance, AMO, mutuelle, paiement direct)
+Plateau technique : volume d'actes (imagerie, biologie, exploration), tarifs
+RH médicale : praticiens (vacataires vs salariés), taux d'exercice privé, rémunération
+RH paramédicale : infirmiers, aides-soignants, techniciens, taux d'encadrement
+Médicaments & consommables : coût / séjour, marge, gestion de stock
+CAPEX : équipements lourds (scanner, IRM, blocs), maintenance, renouvellement
+Règles de calcul critiques
+Calcul
+Formule type
+Application
+Taux d'occupation lits
+Journées d'hospitalisation / (Lits × Jours)
+Plan capacité
+DMS (durée moyenne séjour)
+Σ Journées / Σ Sorties
+Performance organisationnelle
+IRSC (indice ressources/case)
+Σ Poids casemix / Σ Séjours
+Lourdeur activité
+Revenu par séjour
+Σ Actes par séjour × Tarif
+Tarification mixte
+Taux de recouvrement
+Encaissements / Facturations
+Risque payeur
+Coût par lit ouvert
+Charges fixes / Lits ouverts
+Productivité
+Marge plateau technique
+(Tarif - Coût direct) / Tarif × Volume
+Pricing
+DSO par payeur
+Créances / CA × 365 (par payeur)
+Gestion encours
+KPIs et indicateurs sectoriels
+Activité : journées d'hospitalisation, nombre d'admissions, consultations, actes plateau
+Performance organisationnelle : DMS, taux d'occupation, taux d'utilisation blocs, délai RDV
+Casemix : poids moyen, % activité programmée vs urgences, % chirurgie
+Économique : revenu par séjour, revenu par lit, marge par service
+Qualité : taux d'infections nosocomiales, taux de réadmission 30j, satisfaction patients
+Financier : EBITDA, marge nette, BFR / CA en jours, DSO par payeur
+RH : ETP médecins / lit, ETP paramédicaux / lit, taux d'absentéisme
+Structure du template Santé
+Le template Santé comporte 13 feuilles : Notice, Hypothèses, Capacité (lits + blocs), Activité (séjours + casemix), Plateau technique, Tarification multi-payeurs, Recettes & créances, RH médicale & paramédicale, Charges directes (médicaments, consommables), CAPEX & plateau, P&L, BFR & trésorerie, KPIs.
+5.9 ONG et organisations à but non lucratif
+Description du secteur
+Les ONG en zone UEMOA/CEMAC se répartissent entre filiales d'ONG internationales (Save the Children, Plan, CARE, MSF, Croix-Rouge), ONG locales structurées, organisations confessionnelles et réseaux. Leur modèle financier diffère radicalement d'une entreprise : les revenus sont quasi exclusivement issus de subventions et dons, structurés en projets (souvent restricted), avec des obligations de reporting très strictes vers les bailleurs (USAID, AFD, UE, ECHO, fondations privées).
+Sous-secteurs et variantes
+Sous-secteur
+Caractéristiques
+Modèle financier
+ONG internationale (filiale)
+Mandat global, gros bailleurs
+Multi-bailleurs, overhead consolidé groupe
+ONG locale structurée
+Mandat national, levée de fonds locale
+Multi-bailleurs, capacité limitée
+ONG confessionnelle
+Mandat religieux + humanitaire
+Dons réseau + subventions
+Réseau / fédération
+Plateforme d'ONG
+Cotisations + projets fédérés
+OBNL prestataire
+Services rémunérés (santé, éducation)
+Mix subventions + recettes propres
+Spécificités fiscales et réglementaires
+Régime fiscal des associations OHADA : exonération partielle d'IS sur les activités d'utilité publique reconnues
+Régime des dons : déductibilité partielle ou totale selon pays et statut (utilité publique)
+TVA sur achats : récupération possible sous conditions (selon convention bailleurs)
+Régime fiscal du personnel expatrié : conventions internationales, exonérations partielles
+Comptabilité publique pour les organismes recevant des fonds publics
+Obligations OHADA OBNL (Acte uniforme à venir, en cours de finalisation)
+Audit obligatoire au-delà de certains seuils (variable par pays et par bailleur)
+Obligations spécifiques bailleurs : reporting trimestriel/annuel, audit projet, KPI
+Modèle de financement
+Le financement d'une ONG est structurellement différent d'une entreprise. Il s'organise autour de la distinction fondamentale restricted / unrestricted :
+Type de fonds
+Définition
+Utilisation
+Restricted funds
+Fonds affectés à un projet précis par le bailleur
+Strictement contrôlée, reporting détaillé
+Unrestricted funds
+Fonds non affectés (libres d'emploi)
+Frais de structure, projets nouveaux, réserves
+In-kind contributions
+Dons en nature (matériel, locaux, expertise)
+Valorisation comptable, mais pas de cash
+Cost recovery (overhead)
+% prélevé sur projets pour couvrir structure
+Variable par bailleur (7-15% en moyenne)
+Hypothèses clés (intrants paramétrables)
+Pipeline bailleurs : appels à projets ciblés, taux de succès, taille moyenne des projets
+Portefeuille projets : projets actifs, valeur, durée, échéancier de décaissement bailleur
+Allocation : répartition par programme (santé, éducation, agriculture, droits humains, urgence)
+Overhead / cost recovery : taux par bailleur, taux moyen pondéré
+Coûts directs projets : RH terrain, matériel, déplacements, partenaires locaux
+Coûts indirects (structure HQ) : siège, finance, comm, IT, RH, fundraising
+RH : ETP internationaux (expat), nationaux (cadres + terrain), volontaires
+Trésorerie : avances bailleurs vs justifications, fonds propres requis pour pré-financement
+Réserves : fonds propres cibles (généralement 3-6 mois de fonctionnement)
+Audits : coûts audits projets, audit annuel, certifications (ECHO, USAID)
+Règles de calcul critiques
+Calcul
+Formule type
+Application
+Taux d'exécution projet
+Dépenses engagées / Budget projet
+Pilotage projet
+Taux d'absorption (burn rate)
+Décaissé / Reçu bailleur
+Trésorerie projet
+Overhead ratio
+Coûts indirects / Coûts totaux
+< 25% (recommandation)
+Cost recovery ratio
+Overhead facturé / Coûts indirects réels
+Couverture structure
+Diversification bailleurs
+% du top 3 bailleurs / Total revenus
+< 60% (résilience)
+Réserves opérationnelles
+Fonds libres / Coûts mensuels structure
+≥ 3 mois (idéal 6)
+Taux de cofinancement
+Apport propre / Coût total projet
+Selon exigence bailleur
+KPIs et indicateurs sectoriels
+Activité : nombre de projets actifs, valeur totale du portefeuille, nb bénéficiaires touchés
+Financement : revenus totaux, diversification bailleurs, win-rate sur appels à projets
+Exécution : taux d'exécution moyen, taux d'absorption, projets en retard
+Efficience : overhead ratio, cost per beneficiary, coût administratif / coût total
+Trésorerie : réserves en mois, BFR pré-financement, FCF projet vs structure
+Qualité : audits sans réserve, conformité bailleurs, taux de renouvellement bailleurs
+Impact : indicateurs de résultat par programme (logframe theory of change)
+Structure du template ONG
+Le template ONG comporte 13 feuilles : Notice, Hypothèses, Pipeline bailleurs, Portefeuille projets actifs, Budget projet type (matrice activités × lignes), Allocation directe/indirecte, Cost recovery & overhead, RH (expat + nationaux + terrain), Charges de structure HQ, P&L de l'association, Trésorerie & avances bailleurs, Réserves & fonds propres, KPIs & reporting.
+6. Architecture technique cible de l'outil
+6.1 Vue d'ensemble de l'architecture
+L'outil est conçu comme une application web multi-tenant avec calcul côté serveur, interface client riche (single-page application) et possibilité d'export bidirectionnel avec Excel. L'architecture est modulaire avec une séparation claire entre les couches de présentation, d'orchestration, de calcul, de stockage et d'intégration.
+6.2 Stack technique recommandée
+Couche
+Technologie recommandée
+Alternative
+Justification
+Frontend SPA
+React 18 + TypeScript
+Vue 3 + Pinia
+Maturité, écosystème, recrutement
+UI library
+shadcn/ui + Tailwind
+Material-UI, Ant Design
+Modernité, customisation
+Graphiques
+Recharts + Plotly
+Highcharts
+Open source, performance
+Backend API
+Python FastAPI
+Node.js NestJS
+Performance, écosystème data science
+Moteur de calcul
+Python (numpy/pandas) ou Rust
+Julia, C++
+Performance + maintenabilité
+Base de données
+PostgreSQL 16
+MySQL 8
+JSON natif, performance
+Cache
+Redis
+Memcached
+Sessions, calcul async
+Files / Excel I/O
+openpyxl, xlsxwriter
+Apache POI
+Standards Python
+Auth
+OAuth2 + JWT, Keycloak
+Auth0
+Standard, multi-tenant
+Orchestration
+Docker + Kubernetes
+Docker Compose (MVP)
+Scalabilité multi-tenant
+Observabilité
+Prometheus + Grafana + Sentry
+Datadog
+Open source
+CI/CD
+GitHub Actions / GitLab CI
+Jenkins
+Cloud-native
+6.3 Modèle de données (vue logique)
+Le schéma de données simplifié s'articule autour de huit tables principales :
+Table
+Rôle
+Relations clés
+tenant
+Organisation cliente (multi-tenant)
+1-N users, 1-N projects
+user
+Utilisateur authentifié
+N-N projects via role
+template
+Template sectoriel versionné
+1-N assumptions, 1-N calculations
+project
+Projet de modélisation
+FK template, 1-N scenarios
+scenario
+Scénario d'un projet (base, pess, opt)
+FK project, 1-N assumption_values
+assumption_value
+Valeur d'une hypothèse pour un scénario
+FK scenario, FK assumption_def
+calculation_result
+Résultats des calculations (cache)
+FK scenario, FK calculation_def
+audit_log
+Journal d'audit (append-only)
+FK user, FK project
+6.4 Moteur de calcul — Architecture interne
+Le moteur de calcul est le composant le plus critique. Il doit respecter quatre exigences : déterminisme (résultats reproductibles), traçabilité (lineage complet), performance (calcul d'un modèle 5 ans en < 2 secondes), et compatibilité Excel (export en formules natives).
+Architecture interne du moteur
+Couche 1 — Parser : transformation du DSL ou des formules en AST (Abstract Syntax Tree)
+Couche 2 — Dependency analyzer : extraction du graphe de dépendances, détection des cycles légitimes vs erreurs
+Couche 3 — Topological sorter : ordonnancement des calculs en respectant les dépendances
+Couche 4 — Evaluator : exécution des calculs sur les vecteurs temporels (numpy pour performance)
+Couche 5 — Iterative solver : Newton-Raphson amorti pour les boucles convergentes (BFR ↔ FF ↔ résultat)
+Couche 6 — Cache & memoization : mise en cache des résultats intermédiaires, invalidation sélective
+Couche 7 — Excel exporter : sérialisation en formules openpyxl, préservation du lineage
+6.5 API REST publique
+L'outil expose une API REST documentée (OpenAPI 3.0) permettant l'intégration avec d'autres systèmes (CRM, ERP, BI).
+Endpoint
+Méthode
+Rôle
+/api/v1/templates
+GET
+Liste des templates disponibles
+/api/v1/projects
+GET/POST
+Lister / créer un projet
+/api/v1/projects/{id}/scenarios
+GET/POST
+Scénarios d'un projet
+/api/v1/scenarios/{id}/assumptions
+GET/PUT
+Lire / modifier hypothèses
+/api/v1/scenarios/{id}/calculate
+POST
+Déclencher un calcul
+/api/v1/scenarios/{id}/results
+GET
+Récupérer les résultats
+/api/v1/scenarios/{id}/export
+POST
+Exporter (xlsx, pdf, json)
+/api/v1/audit/{project_id}
+GET
+Journal d'audit d'un projet
+6.6 Sécurité et conformité
+Authentification OAuth2 + JWT, support SSO (SAML / OIDC) pour clients enterprise
+Autorisation par rôle (RBAC) au niveau projet et scénario : owner, editor, viewer, auditor
+Chiffrement en transit (TLS 1.3) et au repos (AES-256 sur base de données)
+Isolation multi-tenant : schéma par tenant ou row-level security PostgreSQL
+Audit log immuable, conservation 10 ans (conformité OHADA / fiscale)
+Hébergement : data center régional (zone UEMOA/CEMAC) pour souveraineté des données
+Conformité RGPD pour clients européens, lois locales pour clients locaux
+Backups quotidiens, RPO < 4h, RTO < 24h, disaster recovery testé annuellement
+6.7 Architecture de déploiement
+Trois environnements distincts : Dev (intégration continue, données fictives), Staging (recette utilisateur, données anonymisées), Production (clients réels). Déploiement par conteneurs Docker orchestrés par Kubernetes. Scaling horizontal automatique sur la couche API et les workers de calcul.
+Choix d'architecture critique : monolithe modulaire vs microservices
+Pour la V1 / MVP, un monolithe modulaire (FastAPI + workers Celery + PostgreSQL + Redis) est suffisant et plus simple à maintenir. La séparation en microservices (moteur de calcul, gestion projets, auth, export, BI) ne devient pertinente qu'à partir de plusieurs centaines de tenants ou en cas de charges très différentes par composant. Recommandation : démarrer monolithe modulaire avec une architecture en hexagonal/clean code permettant l'extraction future de microservices.
+7. Roadmap de développement
+7.1 Phasage proposé
+Phase
+Durée
+Périmètre
+Livrables clés
+MVP — Fondations
+6 mois
+3 secteurs prioritaires (BTP, Banque, Assurance CIMA), moteur de calcul, P&L+Bilan+Tréso, export Excel
+Outil utilisable internement H&C Group
+V1 — Élargissement
++ 6 mois
+6 secteurs (ajout Commerce, Industrie, Fintech), scénarisation, KPIs, multi-utilisateurs
+Mise en production pilotes clients
+V2 — Complétude
++ 6 mois
+8 secteurs (ajout Services, Santé, ONG), stress tests, intégrations BI, API publique
+Commercialisation large
+V3 — Industrialisation
++ 12 mois
+Intégrations ERP/CRM, mobile, IA assistante, marketplace de templates
+Plateforme leader régional
+7.2 Détail Phase 1 — MVP (6 mois)
+Mois
+Travaux
+Livrable
+M1
+Setup environnement, architecture, modèle de données, prototype UI
+Architecture validée, prototype navigable
+M2-M3
+Moteur de calcul (DAG, evaluator, solveur itératif), template BTP
+Moteur fonctionnel + template BTP testé
+M3-M4
+Templates Banque et Assurance CIMA, normalisation P&L+Bilan+Tréso
+3 templates fonctionnels
+M4-M5
+Export Excel, scénarisation, multi-utilisateurs
+Export Excel fidèle, 3 scénarios par projet
+M5-M6
+QA approfondie, tests métiers H&C Group, documentation utilisateurs
+Outil utilisable interne H&C
+7.3 Équipe minimale recommandée
+Rôle
+ETP
+Profil
+Product Owner / Chef de projet
+1
+Background finance + tech, bilingue FR/EN
+Lead Tech / Architecte
+1
+Python + React, sénior, 5+ ans
+Développeur Backend Python
+2
+FastAPI, PostgreSQL, calcul numérique
+Développeur Frontend React
+1-2
+React + TypeScript, design UX
+Expert métier sectoriel
+0,5-1
+Domaine BTP / Banque / Assurance
+DevOps / SRE
+0,5
+Docker, K8s, CI/CD
+QA / Testeur
+0,5
+Test automatisé, données financières
+7.4 Critères de succès de la phase MVP
+3 modèles fonctionnels (BTP, Banque, Assurance CIMA) avec validation par experts métiers H&C
+Calcul d'un modèle 5 ans en moins de 2 secondes pour les cas standards
+Export Excel fidèle aux résultats du moteur natif (écart < 10⁻⁶)
+Couverture de tests automatisés > 80% sur le moteur de calcul
+Documentation utilisateur opérationnelle (guide démarrage, vidéos tutoriels)
+Premiers utilisateurs internes H&C Group (Agiltym, NSIA) en exploitation effective
+8. Annexes
+8.1 Glossaire
+Terme
+Définition
+AMO
+Assurance Maladie Obligatoire — régime de couverture santé universelle (en émergence)
+ARR
+Annual Recurring Revenue — chiffre d'affaires annuel récurrent (SaaS)
+BCEAO
+Banque Centrale des États de l'Afrique de l'Ouest (zone UEMOA)
+BEAC
+Banque des États de l'Afrique Centrale (zone CEMAC)
+BFR
+Besoin en Fonds de Roulement — écart entre besoins et ressources d'exploitation
+CAC
+Customer Acquisition Cost — coût d'acquisition client
+CAMV
+Coût d'Achat des Marchandises Vendues
+CAR
+Capital Adequacy Ratio — ratio d'adéquation des fonds propres (banque)
+CET1
+Common Equity Tier 1 — fonds propres durs (Bâle III)
+CIMA
+Conférence Interafricaine des Marchés d'Assurances
+COBAC
+Commission Bancaire de l'Afrique Centrale
+CRCA
+Commission Régionale de Contrôle des Assurances (CIMA)
+CSM
+Contractual Service Margin — marge de service contractuelle (IFRS 17)
+DAG
+Directed Acyclic Graph — graphe orienté acyclique
+DMS
+Durée Moyenne de Séjour (hôpital)
+DPO
+Days Payable Outstanding — délai moyen de paiement fournisseurs
+DSO
+Days Sales Outstanding — délai moyen de recouvrement clients
+ECL
+Expected Credit Loss — pertes attendues sur crédits (IFRS 9)
+EME
+Établissement de Monnaie Électronique
+ESC
+États Statistiques et Comptables (reporting CIMA)
+GMV
+Gross Merchandise Value — volume brut transactionnel (marketplace)
+HQLA
+High Quality Liquid Assets — actifs liquides de haute qualité (Bâle III)
+IFRS
+International Financial Reporting Standards
+IBNR
+Incurred But Not Reported — sinistres survenus non encore déclarés
+KYC/AML
+Know Your Customer / Anti-Money Laundering
+LCR
+Liquidity Coverage Ratio — ratio de liquidité court terme (Bâle III)
+LGD
+Loss Given Default — perte en cas de défaut
+LTV
+Lifetime Value — valeur à vie d'un client
+MNI / NIM
+Marge Nette d'Intérêts / Net Interest Margin
+MRR
+Monthly Recurring Revenue (SaaS)
+NPL
+Non-Performing Loan — créance douteuse
+NRR
+Net Revenue Retention
+NSFR
+Net Stable Funding Ratio — financement stable (Bâle III)
+OEE
+Overall Equipment Effectiveness — efficacité globale équipement
+OHADA
+Organisation pour l'Harmonisation en Afrique du Droit des Affaires
+PCB
+Plan Comptable Bancaire (SYSCOHADA bancaire)
+PD
+Probability of Default — probabilité de défaut
+PM (assurance)
+Provisions Mathématiques (Vie)
+PNB
+Produit Net Bancaire (= équivalent CA pour une banque)
+POC
+Percentage of Completion — méthode à l'avancement (IFRS 15)
+PPNA
+Provision pour Primes Non Acquises (Non-Vie)
+PREC
+Provision pour Risques en Cours
+PSAP
+Provision pour Sinistres À Payer (Non-Vie)
+RBE
+Résultat Brut d'Exploitation (bancaire)
+RTE
+Règlement Trésor Exigible (CIMA)
+RWA
+Risk Weighted Assets — actifs pondérés des risques (Bâle)
+SYSCOHADA
+Système Comptable OHADA
+T2A
+Tarification À l'Activité (hôpital)
+TAF
+Taxe sur les Activités Financières
+TJM
+Taux Journalier Moyen (consulting)
+TPV
+Total Payment Volume — volume total de paiement (fintech)
+UEMOA
+Union Économique et Monétaire Ouest-Africaine
+CEMAC
+Communauté Économique et Monétaire de l'Afrique Centrale
+8.2 Sources réglementaires de référence
+Acte uniforme OHADA portant organisation et harmonisation des comptabilités des entreprises (SYSCOHADA Révisé 2017)
+Code des Assurances CIMA — version consolidée à jour, complété par les directives CRCA
+Plan Comptable Bancaire BCEAO (PCB) — version 2020, harmonisé avec les IFRS pour les états consolidés
+Bâle III — Basel Committee on Banking Supervision, transposition BCEAO/COBAC
+IFRS — IFRS Foundation, normes IAS et IFRS applicables
+Codes généraux des impôts UEMOA et CEMAC — par pays (lois de finances annuelles)
+Codes des investissements — par pays, régimes d'incitation fiscale
+Actes uniformes OHADA — sociétés commerciales, sûretés, recouvrement, procédures collectives, droit commercial
+8.3 Modèles Excel livrés en annexe
+Les modèles Excel suivants sont livrés en annexe de ce document pour servir de référence aux équipes de développement et de point de départ aux utilisateurs métier. Chaque modèle est entièrement opérationnel (calculs en formules natives, zéro erreur), illustre la mise en œuvre des règles de calcul exposées dans la fiche sectorielle correspondante, et est utilisable directement dans Excel.
+8.4 Note méthodologique sur l'usage du document
+Ce document est conçu pour servir trois usages complémentaires :
+Brief pour l'équipe de développement : il définit le périmètre fonctionnel, les règles de calcul, l'architecture cible et la roadmap.
+Référence métier pour la direction et les utilisateurs avancés : il documente les hypothèses, KPIs et règles applicables à chaque secteur.
+Cahier des charges contractuel pour les prestataires externes : il peut être annexé à un appel d'offres ou à un contrat de développement.
+Le document est versionné. Toute évolution majeure (ajout de secteur, modification réglementaire impactante, refonte architecturale) doit donner lieu à une nouvelle version validée par le sponsor (CEO H&C Group), le responsable produit et l'expert métier référent.
+Évolutions à venir
+Plusieurs sujets sont identifiés comme évolutions futures à intégrer aux versions ultérieures : (1) intégration nativement des normes IFRS 17 (assurance) en remplacement progressif du référentiel CIMA actuel ; (2) ajout du secteur Énergie (production, distribution électrique, hydrocarbures) ; (3) ajout du secteur Agriculture & Agro-business intégré (chaînes de valeur) ; (4) intégration ESG et reporting CSRD ; (5) module IA d'assistance à la modélisation (génération automatique d'hypothèses à partir de données historiques).

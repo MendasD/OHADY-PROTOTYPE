@@ -1,0 +1,647 @@
+OHADY
+GUIDE DES WORKFLOWS
+Logique métier détaillée pour le développeur
+Ce document décrit chaque flux fonctionnel :
+qui déclenche quoi, dans quel ordre, avec quelles règles,
+quels statuts, quelles écritures comptables sont générées,
+et quels paramètres sont configurables par l’entreprise.
+Version
+0.2
+Date
+Mai 2026
+Complément du
+Cahier des charges technique et fonctionnel
+Statut
+Confidentiel
+Table des matières
+Introduction — Comment lire ce document
+Ce document est conçu pour un développeur qui intègre l’équipe OHADY. Chaque workflow est décrit avec la même structure :
+Contexte : qui déclenche le flux, pourquoi.
+Acteurs : quels rôles interviennent.
+Flux étape par étape : chaque étape numérotée avec les actions techniques.
+Statuts : les états possibles de l’objet (avec transitions).
+Règles métier : les conditions, validations et contraintes.
+Écritures comptables : les écritures générées automatiquement (débit/crédit).
+Paramétrable : tout ce qui est configurable par l’entreprise (aucune valeur en dur).
+Notes développeur : points d’attention techniques (idempotence, verrouillage, etc.).
+Principe fondateur d’OHADY : la comptabilité est une conséquence automatique des opérations. Chaque workflow génère ses écritures comptables. Le comptable ne saisit pas — il contrôle et valide.
+Workflow 1 — Circuit de dépense
+C’est le workflow le plus complet d’OHADY. Toute sortie d’argent de l’entreprise passe par ce circuit.
+1.1 Contexte
+Un employé a besoin d’engager une dépense (achat de fournitures, frais de mission, avance, formation). Il ne peut pas dépenser directement — il doit passer par un circuit d’approbation qui vérifie le budget, obtient les validations nécessaires, et trace chaque étape.
+1.2 Acteurs
+Rôle
+Qui
+Quand il intervient
+Demandeur
+N’importe quel employé
+Crée la demande de dépense
+Validateur N1
+Chef de département
+Approuve les demandes de son équipe
+Validateur N2
+DAF
+Approuve au-delà du seuil N1
+Validateur N3
+DG
+Approuve au-delà du seuil N2
+Trésorier
+Responsable de caisse/banque
+Crée le bon de dépense et décaisse
+Comptable
+Comptable assigné
+Vérifie le justificatif et valide l’écriture
+Chef comptable
+Superviseur comptable
+Attribue les pièces, supervise
+1.3 Flux étape par étape
+Étape 1 — Création de la demande
+Acteur : Demandeur
+Le demandeur ouvre le formulaire de demande de dépense.
+Il remplit : type de demande, motif détaillé, montant estimé, rubrique budgétaire, date souhaitée.
+Il peut joindre un document justificatif (devis fournisseur, ordre de mission).
+Il soumet. La demande passe en statut SOUMISE.
+  ⚙ Règles métier
+Types de demande : Achat, Mission, Formation, Avance sur salaire, Autre (types paramétrables).
+Pour le type Mission : champs supplémentaires — destination, durée, calcul automatique du per diem.
+Per diem = durée × montant journalier (montant paramétrable par destination et par grade).
+La rubrique budgétaire est obligatoire sauf si le budget n’est pas activé pour l’entreprise.
+Étape 2 — Vérification budgétaire automatique
+Acteur : Système (automatique)
+OHADY vérifie le budget disponible sur la rubrique sélectionnée.
+Le résultat est affiché au validateur : budget initial, déjà consommé, demandes en attente, disponible après cette demande.
+Si le budget est dépassé ET que le blocage est activé : la demande est flagée « Hors budget » mais peut quand même être approuvée par dérogation.
+  ⚙ Règles métier
+Le budget n’est pas bloquant par défaut — c’est un indicateur pour le validateur.
+Le blocage ferme est optionnel et paramétrable.
+Les demandes en attente sont comptées dans le calcul du disponible (pré-engagement).
+  ⚠ Note pour le développeur
+Le calcul du disponible doit être atomique (isolation SERIALIZABLE ou verrouillage).
+Deux demandes simultanées sur la même rubrique ne doivent pas « passer » toutes les deux si le budget est insuffisant.
+Étape 3 — Validation hiérarchique
+Acteur : Validateur(s) selon les seuils
+OHADY détermine le circuit de validation selon le montant de la demande.
+Le premier validateur reçoit une notification (in-app + email).
+Il voit la demande avec le détail, la situation budgétaire, et les pièces jointes.
+Il peut : Approuver, Refuser (avec motif obligatoire), ou Demander une modification.
+Si approuvé et qu’un validateur de niveau supérieur est requis : la demande est transmise au validateur suivant.
+Quand tous les validateurs ont approuvé : la demande passe en statut APPROUVÉE.
+  ⚙ Règles métier
+Seuils de validation paramétrables (ex: < 100 000 FCFA = N1 seul, 100 000 - 1 000 000 = N1+N2, > 1 000 000 = N1+N2+N3).
+Nombre de niveaux paramétrable (pas forcément 3).
+Délégation : si le validateur est absent, il désigne un suppléant (avec date début/fin de délégation).
+Refus = la demande retourne au demandeur avec le motif. Il peut modifier et resoumettre.
+  ⚙ Paramétrable
+Seuils de montant par niveau.
+Validateurs par défaut par département.
+Délais de relance si non validé (ex: rappel après 48h).
+Délégation temporaire avec dates.
+Étape 4 — Création du bon de dépense
+Acteur : Trésorier
+La demande approuvée arrive dans la file du trésorier.
+Le trésorier crée le bon de dépense : numéro automatique (séquentiel par exercice), bénéficiaire, montant exact, mode de paiement (caisse, chèque, virement, mobile money).
+Il imprime le bon si nécessaire (signature physique).
+  ⚙ Règles métier
+Le bon de dépense est un document interne tracé. Numérotation séquentielle sans trou.
+Le montant du bon peut différer du montant de la demande (le coût réel peut être différent de l’estimation).
+Le mode de paiement détermine le journal comptable (banque, caisse, mobile money).
+Étape 5 — Décaissement
+Acteur : Trésorier
+Le trésorier remet l’argent (ou émet le chèque, ou fait le virement).
+Il confirme le décaissement dans OHADY.
+Le bon passe en statut DÉCAISSÉ. L’écriture comptable provisoire est générée (en suspens, sans justificatif encore).
+  ✎ Écritures comptables générées
+Si c’est une avance : Débit 421xxx (Avance personnel) / Crédit 5xx (Caisse ou Banque).
+Si c’est un achat direct : Débit 6xxx (Charge, compte proposé par l’IA) / Crédit 5xx.
+L’écriture est créée en statut SUSPENS (en attente du justificatif).
+Étape 6 — Retour du justificatif
+Acteur : Demandeur ou Trésorier
+La personne revient avec le justificatif (facture, reçu, note de frais).
+Le trésorier scanne ou photographie le justificatif et le joint au bon dans OHADY.
+Si le montant du justificatif diffère du montant décaissé : OHADY signale l’écart et propose les options (remboursement du trop-perçu, complément, ajustement).
+Le bon passe en statut JUSTIFIÉ.
+  ⚙ Règles métier
+Si avance : comparaison avance vs justificatif. Trop-perçu = l’employé rembourse. Déficit = complément de caisse.
+Délai maximal pour retour du justificatif paramétrable (ex: 7 jours). Au-delà, alerte.
+Un bon sans justificatif reste en SUSPENS indéfiniment jusqu’à résolution.
+Étape 7 — Validation comptable
+Acteur : Comptable assigné
+Le bon justifié arrive dans la file de travail du comptable.
+L’attribution se fait soit par règle automatique (par type d’opération, par journal, par tiers), soit manuellement par le chef comptable.
+Le comptable ouvre le bon. Il voit côte à côte : le bon de dépense, le justificatif scanné, et l’écriture comptable proposée par OHADY.
+Il vérifie que les comptes et le libellé sont corrects. Il peut modifier les comptes, les montants, ou le libellé.
+Il valide. L’écriture passe de SUSPENS à VALIDÉE. Le budget est mis à jour.
+  ⚙ Règles métier
+Verrouillage anti-doublon : quand un comptable ouvre un bon, il est verrouillé pour les autres.
+Workflow junior/senior : si le comptable est junior, l’écriture passe d’abord en statut SOUMISE. Un senior la valide.
+Si le senior est aussi le seul comptable, il valide directement.
+Chaque correction du comptable alimente la mémoire de l’IA (l’IA propose mieux la prochaine fois).
+  ✎ Écritures comptables générées
+L’écriture provisoire créée à l’étape 5 est finalisée :
+Le compte de charge est confirmé (ex: 6064 Fournitures de bureau).
+La TVA est extraite si applicable (ex: Débit 4451 TVA récupérable).
+L’écriture passe en statut VALIDÉE et devient immutable.
+  ⚠ Note pour le développeur
+L’écriture validée ne peut plus être modifiée. Pour corriger : contre-passation.
+La piste d’audit enregistre toutes les modifications entre l’écriture proposée et l’écriture validée.
+Idempotence : le clic « Valider » doit être idempotent (double-clic = un seul enregistrement).
+1.4 Statuts de la demande de dépense
+Statut
+Description
+Transition possible
+BROUILLON
+Le demandeur a commencé sans soumettre
+SOUMISE, SUPPRIMÉE
+SOUMISE
+Le demandeur a soumis
+EN_VALIDATION, REFUSÉE
+EN_VALIDATION
+En cours d’approbation hiérarchique
+APPROUVÉE, REFUSÉE, MODIF_DEMANDÉE
+MODIF_DEMANDÉE
+Le validateur demande un changement
+SOUMISE (resoumet après modification)
+REFUSÉE
+Refusée par un validateur
+SOUMISE (si resoumet), CLÔTURÉE
+APPROUVÉE
+Tous les validateurs ont approuvé
+EN_DÉCAISSEMENT
+EN_DÉCAISSEMENT
+Bon de dépense créé par le trésorier
+DÉCAISSÉE
+DÉCAISSÉE
+Argent remis, en attente de justificatif
+JUSTIFIÉE
+JUSTIFIÉE
+Justificatif reçu
+VALIDÉE_COMPTA
+VALIDÉE_COMPTA
+Comptable a validé l’écriture
+CLÔTURÉE
+CLÔTURÉE
+Traitement terminé
+— (terminal)
+Workflow 2 — Rapprochement par relevé bancaire
+Le comptable importe le relevé de chaque institution financière (banque ou mobile money) et rapproche les opérations avec les écritures existantes.
+2.1 Acteurs
+Comptable : importe le relevé, valide les propositions.
+Système (IA) : analyse le fichier, propose les rapprochements.
+2.2 Flux étape par étape
+Étape 1 — Sélection de la source et import
+Le comptable sélectionne la source dans un menu déroulant (BICIS, UBA, Ecobank, SGBS, BOA, Wave, Orange Money, PayDunya, Autre).
+Il dépose le fichier dans la zone d’import (drag & drop ou sélection).
+OHADY détecte le format du fichier.
+  ⚙ Règles métier
+CSV / Excel : parsing direct avec le parseur correspondant à la source sélectionnée.
+PDF : envoi à AWS Textract pour extraction du tableau, puis structuration par Claude API.
+Si la source est « Autre » : le comptable définit le mapping des colonnes manuellement (quel colonne = date, quel = libellé, etc.).
+Chaque source a un parseur spécifique stocké en paramétrage (format des colonnes, encodage, délimiteur).
+Étape 2 — Analyse et propositions
+OHADY parse les opérations du relevé (date, libellé, montant, sens débit/crédit).
+Pour chaque opération du relevé, OHADY cherche un rapprochement dans les écritures comptables existantes :
+Critères : même montant, même période (± 5 jours paramétrable), même tiers (si reconnu).
+Match exact (montant + tiers + date proche) = VERT (confiance haute).
+Match par montant seul = ORANGE (incertain).
+Aucun match mais opération récurrente reconnue par l’IA = BLEU (proposition d’écriture).
+Aucun match, non reconnu = ROUGE (saisie manuelle).
+OHADY affiche le tableau des opérations colorées.
+Étape 3 — Validation par le comptable
+Le comptable coche les lignes VERTES et clique « Valider en lot » (un seul clic pour toutes).
+Pour chaque ligne BLEUE : il vérifie le compte et le libellé proposés, modifie si besoin, et valide individuellement.
+Pour chaque ligne ORANGE : il décide (rapprocher avec une écriture existante, créer une nouvelle écriture, ou reporter).
+Pour chaque ligne ROUGE : il saisit l’écriture manuellement.
+Quand toutes les lignes sont traitées : OHADY affiche le récapitulatif.
+Étape 4 — Récapitulatif
+Solde comptable du compte.
+Solde du relevé (dernière ligne).
+Écart expliqué (opérations en suspens côté comptable, opérations non rapprochées côté relevé).
+Nombre d’opérations par code couleur (stats de l’import).
+  ✎ Écritures comptables générées
+Pour chaque opération BLEUE validée, une écriture est créée :
+Ex: Prélèvement SDE (eau) = Débit 6051 (Fournitures eau) / Crédit 521 (Banque).
+Ex: Virement client reçu = Débit 521 (Banque) / Crédit 411xxx (Client).
+L’IA propose le compte de charge/produit basé sur le libellé du relevé.
+  ⚙ Paramétrable
+Sources de relevés paramétrables (ajout de nouvelles banques/opérateurs).
+Parseurs par source (mapping des colonnes).
+Tolérance de date pour le match (± N jours, par défaut 5).
+Seuils de confiance IA pour le code couleur.
+  ⚠ Note pour le développeur
+Dédoublonnage : si le même relevé est importé deux fois, OHADY détecte les doublons par date+montant+libellé.
+Le relevé importé est stocké en pièce jointe (S3) pour traçabilité.
+Les corrections du comptable alimentent la mémoire IA (prochaine fois, la SDE sera proposée automatiquement en BLEU).
+Workflow 3 — Facturation client (devis → encaissement)
+Le cycle complet : depuis le devis initial jusqu’à l’encaissement et le lettrage.
+3.1 Flux étape par étape
+Étape 1 — Création du devis
+Acteur : Commercial ou comptable
+Sélection du client (auto-complétion depuis la base tiers). Si nouveau client : création rapide.
+Ajout des lignes (désignation, quantité, prix unitaire HT). Auto-complétion depuis le catalogue si existant.
+Le calcul est automatique : Total HT, remise, Net HT, TVA (taux du pays), TTC, montant en lettres.
+Ajout des conditions (paiement, livraison, validité du devis).
+Aperçu PDF et envoi (email, WhatsApp, ou impression).
+Statut : ENVOYÉ.
+  ⚙ Règles métier
+Numérotation automatique séquentielle (format paramétrable, ex: DEV-2026-001).
+Durée de validité par défaut paramétrable (ex: 30 jours). Alerte quand un devis expire sans réponse.
+Pas d’écriture comptable à ce stade (un devis n’est pas un engagement comptable).
+Étape 2 — Acceptation du devis
+Acteur : Commercial
+Le client accepte le devis (par email, signature électronique, WhatsApp, ou verbalement).
+Le commercial met à jour le statut : ACCEPTÉ.
+Si l’entreprise le souhaite, un bon de commande est généré depuis le devis.
+Le plan d’encaissement est défini : nombre d’acomptes, montants, dates prévues.
+  ⚙ Règles métier
+Mode de validation du devis paramétrable par entreprise :
+Strict : signature électronique obligatoire.
+Souple : le commercial marque « accepté » manuellement.
+Le plan d’encaissement alimente les prévisions de trésorerie.
+Étape 3 — Facturation
+Acteur : Comptable ou commercial
+Transformation du devis accepté en facture (un clic). Toutes les données sont reprises.
+Le comptable vérifie et ajuste si nécessaire (modification de montant, ajout d’une ligne).
+Il valide la facture. L’écriture comptable est générée automatiquement.
+La facture est envoyée au client (email, WhatsApp) et/ou à la plateforme DGI.
+  ✎ Écritures comptables générées
+Débit 411xxx (Client) pour le montant TTC.
+Crédit 706 (Prestations de services) ou 701 (Ventes de marchandises) pour le montant HT.
+Crédit 4431 (TVA facturée) pour le montant de la TVA.
+Le compte de produit est proposé par l’IA selon la désignation. Le comptable confirme.
+Étape 4 — Encaissement
+Acteur : Comptable ou trésorier
+Le paiement arrive (par virement, mobile money, chèque, espèces).
+OHADY enregistre l’encaissement : date, montant, mode de paiement, référence.
+Le lettrage est proposé automatiquement (rapprochement de l’encaissement avec la facture).
+Si le paiement est partiel (acompte) : lettrage partiel, la facture reste ouverte pour le solde.
+  ✎ Écritures comptables générées
+Débit 521 (Banque) ou 571 (Caisse) pour le montant reçu.
+Crédit 411xxx (Client) pour le même montant.
+Lettrage automatique : l’encaissement est rapproché de la facture correspondante.
+3.2 Statuts du pipeline commercial
+Statut
+Description
+Transition
+DEVIS_BROUILLON
+En cours de rédaction
+DEVIS_ENVOYÉ
+DEVIS_ENVOYÉ
+Envoyé au client
+ACCEPTÉ, REFUSÉ, EXPIRÉ
+ACCEPTÉ
+Client a accepté
+FACTURÉ
+FACTURÉ
+Facture émise
+EN_ATTENTE_PAIEMENT
+EN_ATTENTE_PAIEMENT
+Facture envoyée, pas encore payée
+PAYÉ, PARTIELLEMENT_PAYÉ, EN_RETARD
+PARTIELLEMENT_PAYÉ
+Acompte reçu, reste dû
+PAYÉ, EN_RETARD
+EN_RETARD
+Dépassé l’échéance (seuil paramétrable)
+PAYÉ, EN_RECOUVREMENT
+EN_RECOUVREMENT
+Relance active
+PAYÉ, CONTENTIEUX
+CONTENTIEUX
+Litige formel
+PAYÉ, PERTE
+PAYÉ
+Totalement encaissé et lettré
+CLÔTURÉ (terminal)
+PERTE
+Créance irrécouvrable
+CLÔTURÉ (terminal)
+Workflow 4 — Recouvrement et relances
+4.1 Déclenchement
+Le recouvrement se déclenche automatiquement quand une facture dépasse son échéance sans paiement. Le système exécute le scénario de relance configuré.
+4.2 Scénario de relance (exemple par défaut)
+Palier
+Délai
+Canal
+Ton
+Action OHADY
+Relance 1
+J+7
+Email
+Courtois, rappel
+Envoi auto, enregistre en historique
+Relance 2
+J+15
+Email + SMS
+Ferme
+Envoi auto
+Relance 3
+J+30
+Téléphone
+Urgent
+Crée une tâche pour le commercial
+Relance 4
+J+60
+Courrier/WhatsApp
+Mise en demeure
+Génère la lettre de mise en demeure
+Contentieux
+J+90
+Judiciaire
+Formel
+Passage en contentieux
+  ⚙ Paramétrable
+Nombre de paliers paramétrable (pas forcément 5).
+Délais paramétrables (pas forcément 7/15/30/60/90).
+Canaux par palier paramétrables.
+Modèles de messages paramétrables (avec variables : {client}, {montant}, {facture}, {date}).
+Le scénario peut être différent par catégorie de client (VIP, standard, à risque).
+4.3 Gestion des incidents clients
+Quand un client conteste ou refuse de payer à cause d’un problème (qualité, retard livraison).
+Le commercial ou le comptable déclare un incident sur la facture concernée.
+Il remplit : type d’incident, description, impact financier estimé.
+Un plan d’action est créé : actions à mener, responsable de chaque action, échéance.
+La relance automatique est suspendue tant que l’incident est ouvert.
+Quand l’incident est résolu : la relance reprend ou un avoir/remise est émis.
+Workflow 5 — Clôture mensuelle
+Chaque fin de mois, le comptable vérifie et verrouille la période.
+5.1 Flux
+Le comptable ouvre la checklist de clôture du mois M.
+OHADY affiche la checklist interactive (chaque élément est coché quand c’est fait) :
+Toutes les écritures du mois sont validées (aucune en brouillon).
+Tous les rapprochements bancaires du mois sont faits.
+Les amortissements du mois sont passés.
+La TVA du mois est calculée.
+Aucun suspens ancien non résolu (alerte si oui).
+La balance est équilibrée (débit total = crédit total).
+Les comptes d’attente sont soldés.
+L’IA commente chaque point : « 3 écritures en brouillon restent, voulez-vous les voir ? »
+Quand tout est coché : le comptable clôture le mois.
+Le mois est verrouillé : aucune écriture ne peut être ajoutée ou modifiée dans cette période (sauf déverrouillage exceptionnel par le chef comptable avec traçabilité).
+  ⚙ Règles métier
+La checklist est paramétrable (l’entreprise peut ajouter ou retirer des points de contrôle).
+Le verrouillage est irréversible sauf dérogation du chef comptable (tracée dans l’audit log).
+  ⚠ Note pour le développeur
+Le verrouillage se fait au niveau de la période (mois/année) via un flag en BDD.
+Tout INSERT ou UPDATE sur les écritures d’une période verrouillée est rejeté par le backend (contrôle NestJS + contrainte BDD).
+Workflow 6 — Clôture annuelle
+6.1 Contexte
+La clôture annuelle est plus complexe. L’entreprise doit pouvoir travailler sur le nouvel exercice avant d’avoir clôturé l’ancien (2 exercices en parallèle).
+6.2 Flux
+Tous les mois de l’exercice N sont clôturés (workflow 5 appliqué 12 fois).
+Le comptable passe les écritures d’inventaire : provisions, régularisations, ajustements de stocks, écarts de change.
+OHADY génère les états financiers : bilan, compte de résultat, TAFIRE, notes annexes.
+Le comptable vérifie les états et ajuste si nécessaire.
+Le chef comptable ou l’expert-comptable valide la clôture annuelle.
+OHADY génère les à-nouveaux : report des soldes de bilan dans l’exercice N+1.
+L’exercice N est verrouillé définitivement.
+  ⚙ Règles métier
+Pendant la période intermédiaire, l’exercice N+1 est déjà ouvert. Les écritures quotidiennes y sont enregistrées.
+Les à-nouveaux provisoires sont générés dès l’ouverture de N+1 et mis à jour à chaque modification de N.
+La réouverture exceptionnelle de N (si erreur découverte) est possible avec autorisation du responsable et traçabilité complète.
+Le résultat de N est affecté (report à nouveau, réserves, dividendes) par une écriture d’affectation dans N+1.
+  ✎ Écritures comptables générées
+À-nouveaux : chaque compte de bilan (classes 1 à 5) est reporté avec son solde débiteur ou créditeur.
+Les comptes de gestion (classes 6 et 7) sont soldés et le résultat est porté au compte 131 (Résultat net).
+Affectation : Débit 131 / Crédit 110 (Report à nouveau) ou 111 (Réserves).
+Workflow 7 — OCR et saisie de facture fournisseur
+7.1 Flux
+Le comptable dépose le scan ou la photo de la facture fournisseur (PDF, JPG, PNG).
+OHADY envoie le document à AWS Textract pour extraction brute du texte et des tableaux.
+Le résultat brut est envoyé à Claude API avec un prompt spécifique : « Extrais les informations suivantes de cette facture : fournisseur, date, numéro, montant HT, TVA, TTC, lignes détaillées. Réponds en JSON. »
+OHADY affiche la vue côte à côte : image de la facture à gauche, données extraites à droite.
+Chaque champ extrait a un indicateur de confiance : vert (≥ 90%), orange (70-89%), rouge (< 70%).
+Le comptable vérifie, corrige si nécessaire, et valide.
+OHADY propose l’écriture comptable complète (comptes, montants, libellé).
+Le comptable valide l’écriture.
+  ✎ Écritures comptables générées
+Débit 6xxx (Charge, compte proposé par l’IA selon la désignation).
+Débit 4451 (TVA récupérable) si applicable.
+Crédit 401xxx (Fournisseur).
+La facture scannée est rattachée à l’écriture comme pièce jointe.
+  ⚠ Note pour le développeur
+La chaîne OCR est : Textract (extraction brute) → Claude (structuration intelligente).
+Les factures africaines sont souvent de qualité médiocre (scan flou, tampon sur le montant). Les indicateurs de confiance sont essentiels.
+Chaque correction du comptable est stockée et utilisée pour améliorer les propositions futures (mémoire contextuelle).
+Textract est appelé de manière asynchrone via BullMQ (job queue) pour ne pas bloquer l’utilisateur.
+Workflow 8 — Lettrage
+Le lettrage consiste à rapprocher une facture avec son paiement pour confirmer que l’opération est soldée.
+8.1 Types de lettrage
+Type
+Description
+Automatique
+OHADY rapproche par montant + tiers. Un paiement de 500 000 du client X est rapproché avec la facture de 500 000 du client X.
+Manuel
+Le comptable sélectionne les écritures à rapprocher manuellement.
+Partiel
+Un paiement de 300 000 sur une facture de 500 000. Le lettrage est partiel, reste 200 000 dû.
+Multiple
+Un seul paiement de 800 000 rapproché avec deux factures (500 000 + 300 000).
+Avec escompte
+Paiement de 480 000 sur facture de 500 000, différence = escompte accordé. Écriture d’escompte générée.
+Avec trop-perçu
+Paiement de 520 000 sur facture de 500 000. Excédent comptabilisé en à-valoir ou remboursé.
+8.2 Flux du lettrage automatique
+Un paiement est enregistré (par import de relevé ou saisie manuelle).
+OHADY cherche les factures non lettrées du même tiers.
+Si match exact (même montant) : proposition de lettrage automatique.
+Si match partiel : proposition de lettrage partiel.
+Le comptable valide ou ajuste.
+Les écritures sont lettrées (même code de lettrage attribué).
+  ⚙ Règles métier
+Le lettrage ne modifie pas les écritures. Il les lie par un code de lettrage commun.
+Délettrage possible (annulation du rapprochement) avec traçabilité.
+Le contrôle : la somme des écritures débit lettrées doit égaler la somme des écritures crédit lettrées.
+Pour le lettrage avec escompte : seuil de tolérance paramétrable (ex: écart < 5% = escompte proposé).
+  ✎ Écritures comptables générées
+Lettrage avec escompte : Débit 673 (Escomptes accordés) / Crédit 411xxx (Client).
+Lettrage avec trop-perçu : Débit 411xxx (Client) en négatif = à-valoir, ou Crédit 758 (Produit divers).
+Workflow 9 — Synchronisation hors-ligne
+L’application desktop (Electron) fonctionne sans internet. Ce workflow décrit la synchronisation.
+9.1 Flux
+L’utilisateur travaille normalement dans Electron. Toutes les données sont stockées en SQLite local (chiffré par SQLCipher).
+Chaque création/modification est enregistrée dans une table sync_queue locale : (id, table, action, data, timestamp, synced=false).
+Dès qu’internet revient, Electron détecte la connexion et déclenche la synchronisation.
+Il envoie les opérations en attente au serveur dans l’ordre chronologique.
+Le serveur traite chaque opération et répond (succès ou conflit).
+En cas de conflit (même donnée modifiée par deux personnes) : last write wins par défaut, avec notification à l’utilisateur.
+Les données du serveur sont téléchargées pour mettre à jour le cache local.
+Les opérations syncées sont marquées synced=true dans sync_queue.
+  ⚠ Note pour le développeur
+Chaque opération envoyée au serveur porte un identifiant unique (UUID généré côté client) pour l’idempotence.
+Si l’envoi échoue en cours de route, le client peut réessayer sans créer de doublons.
+La taille du cache local est limitée aux données récentes (3 derniers mois paramétrable) pour ne pas surcharger le disque.
+Le chiffrement SQLCipher utilise AES-256. La clé est dérivée du mot de passe utilisateur.
+Workflow 10 — Collaboration expert-comptable / entreprise
+10.1 Invitation
+Le dirigeant va dans Paramétrage > Expert-comptable.
+Il entre l’email de l’expert-comptable et définit les permissions (lecture seule, ou lecture + annotations, ou accès complet).
+L’expert-comptable reçoit un email d’invitation avec un lien.
+Il crée son compte OHADY (s’il n’en a pas) ou accepte l’invitation.
+Le dossier de l’entreprise apparaît dans sa vue multi-dossiers.
+10.2 Travail au quotidien
+L’expert-comptable voit tous ses dossiers dans un tableau de bord unique.
+Des alertes colorées signalent les dossiers nécessitant son attention (clôture en retard, anomalie, suspens ancien).
+Il ouvre un dossier et travaille comme si c’était son propre OHADY.
+Il peut ajouter des commentaires/annotations sur les écritures (visibles par le comptable de l’entreprise).
+En fin de mission, le dirigeant peut révoquer l’accès.
+  ⚙ Règles métier
+L’expert-comptable ne peut jamais accéder à un dossier qu’on ne lui a pas assigné (RLS).
+Ses actions sont tracées dans la piste d’audit comme tout autre utilisateur.
+La révocation est immédiate et irréversible (il faut une nouvelle invitation).
+Workflow 11 — Migration depuis Sage / Excel
+11.1 Flux
+Le comptable ouvre l’assistant de migration (Paramétrage > Migration).
+Il sélectionne la source : Sage 100, Excel, Autre logiciel.
+Étape 1 — Plan comptable : il importe le fichier du plan comptable (CSV ou Excel). OHADY mappe les comptes importés avec le SYSCOHADA. Les comptes non reconnus sont signalés pour mapping manuel.
+Étape 2 — Tiers : il importe les fiches clients et fournisseurs. OHADY dédoublonne par NINEA ou raison sociale.
+Étape 3 — Balance d’ouverture : il importe la balance de l’exercice précédent. OHADY génère les écritures d’à-nouveaux.
+Étape 4 — Vérification : OHADY affiche un récapitulatif (nombre de comptes, total débit, total crédit, nombre de tiers). Le comptable vérifie et valide.
+Migration terminée. L’entreprise peut commencer à travailler.
+  ⚠ Note pour le développeur
+La migration est idépotente : on peut la relancer sans doubler les données.
+Les données historiques (détail des écritures N-1) ne sont pas importées — seulement la balance d’ouverture.
+Prévoir un mapping Sage → SYSCOHADA pour les comptes les plus courants (table de correspondance en BDD).
+Workflow 12 — Génération automatique des écritures
+Ce workflow transversal résume toutes les situations où OHADY génère une écriture comptable automatiquement, sans saisie manuelle du comptable.
+Opération déclenchante
+Écriture générée
+Journal
+Facture client émise
+D 411 Client / C 70x Produit + C 4431 TVA
+Ventes
+Facture fournisseur saisie ou OCR
+D 6xx Charge + D 4451 TVA / C 401 Fournisseur
+Achats
+Encaissement client
+D 5xx Banque-Caisse / C 411 Client
+Banque/Caisse
+Paiement fournisseur
+D 401 Fournisseur / C 5xx Banque-Caisse
+Banque/Caisse
+Décaissement (bon de dépense)
+D 6xx Charge ou 421 Avance / C 5xx
+Banque/Caisse
+Rapprochement relevé (ligne bleue)
+D/C proposé par l’IA selon le libellé
+Banque
+Virement interne (compte → compte)
+D 5xx Destination / C 5xx Source
+OD
+Amortissement mensuel
+D 681 Dotation / C 28x Amortissement
+OD
+Variation de stock
+D 603 Variation / C 31x-37x Stock
+OD
+À-nouveaux (clôture annuelle)
+Report des soldes de bilan
+OD
+Écart de change (clôture)
+D/C 476-477 Écart de conversion
+OD
+Lettrage avec escompte
+D 673 Escompte / C 411 Client
+OD
+Avoir/remise client
+D 70x Produit / C 411 Client
+Ventes
+Dans tous les cas, l’écriture est générée en statut BROUILLON ou SUSPENS. Le comptable la valide. Rien ne passe en comptabilité définitive sans validation humaine.
+Workflow 13 — Avances et per diem (missions)
+13.1 Contexte
+Un employé part en mission. Il reçoit une avance (per diem + frais estimés) avant le départ. Au retour, il justifie ses dépenses.
+13.2 Flux
+L’employé crée une demande de type MISSION : destination, durée, motif.
+OHADY calcule automatiquement le per diem : durée × montant journalier (paramétré par destination et par catégorie d’employé).
+L’employé peut ajouter des frais supplémentaires estimés (billet d’avion, hébergement hors per diem, etc.).
+La demande suit le circuit d’approbation (workflow 1, étapes 2-3).
+Le trésorier décaisse l’avance.
+  ✎ Écritures comptables générées
+Débit 421 (Personnel, avance) / Crédit 5xx (Caisse ou Banque).
+L’avance est enregistrée comme une créance sur l’employé.
+Au retour, l’employé soumet ses justificatifs (reçus hôtel, billets, factures).
+Le trésorier vérifie : total justifié vs avance reçue.
+Si justifié < avance : l’employé rembourse la différence.
+Si justifié > avance : l’entreprise verse le complément.
+Si justifié = avance : rien à régulariser.
+Le comptable valide et génère l’écriture de régularisation.
+  ✎ Écritures comptables générées
+Régularisation : Débit 625 (Déplacements, missions) / Crédit 421 (Personnel, avance).
+Si remboursement par l’employé : Débit 5xx / Crédit 421.
+Si complément : Débit 421 / Crédit 5xx + Débit 625 / Crédit 421.
+  ⚙ Paramétrable
+Per diem par destination paramétrable (ex: Dakar=25 000 FCFA/j, Abidjan=35 000 FCFA/j).
+Per diem par grade paramétrable (ex: directeur +50%, manager +25%).
+Délai maximal de justification paramétrable (ex: 7 jours après retour).
+Alerte si avance non soldée au-delà du délai.
+Workflow 14 — Immobilisations et amortissements
+14.1 Acquisition
+Le comptable enregistre l’acquisition d’un bien : désignation, valeur d’acquisition, date de mise en service, durée de vie, méthode d’amortissement.
+OHADY génère l’écriture d’immobilisation.
+Le plan d’amortissement est calculé automatiquement.
+  ✎ Écritures comptables générées
+Débit 2xxx (Immobilisation selon sa nature) / Crédit 481 (Fournisseur d’immobilisation) ou 5xx (règlement direct).
+14.2 Amortissement périodique
+À chaque période (mensuelle ou annuelle, paramétrable), OHADY calcule la dotation.
+L’écriture de dotation est générée automatiquement en lot (toutes les immobilisations).
+Le comptable valide le lot.
+  ✎ Écritures comptables générées
+Débit 681 (Dotation aux amortissements) / Crédit 28xx (Amortissement de l’immobilisation).
+14.3 Cession ou mise au rebut
+Le comptable enregistre la sortie : date, motif (vente ou mise au rebut), prix de cession si vente.
+OHADY calcule la valeur nette comptable (VNC) à la date de cession.
+L’écriture de cession est générée avec la plus-value ou la moins-value.
+  ✎ Écritures comptables générées
+Sortie de l’actif : Débit 28xx / Crédit 2xxx (pour la partie amortie).
+Moins-value ou plus-value : Débit 81x ou Crédit 82x.
+Encaissement du prix de vente : Débit 5xx / Crédit 82x.
+Workflow 15 — Système de notifications
+Les notifications sont transversales à tous les modules.
+15.1 Canaux
+In-app : badge + panneau de notifications (toujours actif).
+Email : envoi via SendGrid/SES.
+SMS : envoi via Twilio (alertes urgentes).
+WhatsApp Business : envoi via API WhatsApp.
+15.2 Événements déclencheurs (exemples)
+Événement
+Destinataire
+Canal par défaut
+Demande de dépense soumise
+Validateur N1
+In-app + Email
+Demande approuvée
+Trésorier
+In-app + Email
+Demande refusée
+Demandeur
+In-app + Email
+Facture en retard de paiement
+Comptable
+In-app
+Relance automatique envoyée
+Comptable (notification), Client (relance)
+In-app / Email
+Avance non soldée > délai
+Trésorier + Comptable
+In-app + Email
+Échéance fiscale dans 7 jours
+Chef comptable
+In-app + Email + SMS
+Trésorerie sous le seuil d’alerte
+DAF + Dirigeant
+In-app + SMS
+Anomalie détectée par l’IA
+Comptable
+In-app
+Relevé non importé depuis > N jours
+Comptable
+In-app
+Clôture mensuelle en retard
+Chef comptable
+In-app + Email
+  ⚙ Paramétrable
+Chaque utilisateur choisit ses canaux par type de notification.
+Les délais de déclenchement sont paramétrables.
+Les événements sont désactivables individuellement.
+— Fin du guide des workflows —
+Ce document est un complément du Cahier des charges technique et fonctionnel OHADY v0.2.
+Version 0.2 — Mai 2026 — H&C Group — Confidentiel

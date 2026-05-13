@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\User\\\\Desktop\\\\Developpement\\\\H&C\\\\OHADY\\\\docs\\\\\" -Recurse -Force | Select-Object FullName, Extension | Sort-Object FullName)",
+      "PowerShell(winget install OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements 2>&1)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"User\"\\); node --version; npm --version)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\User\\\\Desktop\\\\Developpement\\\\H&C\\\\OHADY\\\\.claude\" 2>/dev/null; echo done)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" node_modules/vite/bin/vite.js --port 3000)",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(Get-Content \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-User-Desktop-Developpement-H-C-OHADY\\\\4954855d-7cdb-4a91-9e3d-c17c7ee1085d\\\\tasks\\\\bysgmatpk.output\")",
+      "mcp__Claude_in_Chrome__tabs_context_mcp"
+    ]
+  }
+}
