@@ -2,7 +2,7 @@ name: Deploy OHADY prototype to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, v2-vite]
   workflow_dispatch:
 
 permissions:
