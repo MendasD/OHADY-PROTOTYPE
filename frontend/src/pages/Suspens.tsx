@@ -61,7 +61,7 @@ export default function Suspens() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'Écritures en suspens', val: suspens.length.toString(), color: 'text-blue-600' },
           { label: 'Total débit suspens', val: fmtXOF(totalDebit), color: 'text-amber-600' },

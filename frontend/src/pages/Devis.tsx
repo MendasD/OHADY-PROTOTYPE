@@ -67,7 +67,7 @@ export default function Devis() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'Pipeline total', val: fmtXOF(totaux.montantTotal), color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Devis acceptés', val: fmtXOF(totaux.acceptes), color: 'text-green-600', bg: 'bg-green-50' },

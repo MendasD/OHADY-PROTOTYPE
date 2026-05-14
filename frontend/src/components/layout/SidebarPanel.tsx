@@ -11,16 +11,19 @@ const badgeColors: Record<string, string> = {
 };
 
 export default function SidebarPanel() {
-  const { activeModule, panelOpen, setPanelOpen } = useSidebar();
+  const { activeModule, panelOpen, setPanelOpen, barVisible } = useSidebar();
   const location = useLocation();
 
   const module = navModules.find(m => m.id === activeModule);
+
+  // Si la barre principale est cachée, le panel doit l'être aussi
+  if (!barVisible) return null;
 
   return (
     <div
       className="fixed inset-y-0 z-30 flex flex-col"
       style={{
-        left: 64,
+        left: 84,
         width: panelOpen ? 220 : 0,
         transition: 'width 0.22s cubic-bezier(0.4,0,0.2,1)',
         overflow: 'hidden',

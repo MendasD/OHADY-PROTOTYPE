@@ -125,7 +125,7 @@ export default function Tresorerie() {
   };
 
   return (
-    <div className="space-y-6 max-w-screen-xl">
+    <div className="space-y-6 max-w-screen-xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

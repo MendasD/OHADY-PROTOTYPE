@@ -57,7 +57,7 @@ export default function Fournisseurs() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'Fournisseurs actifs', val: fournisseurs.filter(f => f.statut === 'Actif').length.toString(), color: 'text-blue-600' },
           { label: 'Total dû fournisseurs', val: fmtXOF(totalDu), color: 'text-amber-600' },

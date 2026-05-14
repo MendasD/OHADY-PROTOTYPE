@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Building2, TrendingDown, Plus, Download } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 
 const fmtXOF = (n: number) =>
   new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' XOF';
 
 type Tab = 'registre' | 'amortissements';
+const pathToTab: Record<string, Tab> = {
+  '/immobilisations': 'registre',
+  '/amortissements': 'amortissements',
+};
+const tabToPath: Record<Tab, string> = {
+  registre: '/immobilisations',
+  amortissements: '/amortissements',
+};
 
 const immobilisations = [
   {
@@ -56,7 +65,19 @@ const dotationsParAn = [
 ];
 
 export default function Immobilisations() {
-  const [tab, setTab] = useState<Tab>('registre');
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>(pathToTab[pathname] ?? 'registre');
+
+  useEffect(() => {
+    const t = pathToTab[pathname];
+    if (t && t !== tab) setTab(t);
+  }, [pathname, tab]);
+
+  const changeTab = (t: Tab) => {
+    setTab(t);
+    if (tabToPath[t] !== pathname) navigate(tabToPath[t]);
+  };
 
   const totalValeur = immobilisations.reduce((s, i) => s + i.valeur, 0);
   const totalCumul = immobilisations.reduce((s, i) => s + i.cumulAmort, 0);
@@ -86,7 +107,7 @@ export default function Immobilisations() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'Valeur brute totale', val: fmtXOF(totalValeur), color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Amortissements cumulés', val: fmtXOF(totalCumul), color: 'text-orange-600', bg: 'bg-orange-50' },
@@ -106,7 +127,7 @@ export default function Immobilisations() {
         {tabs.map(t => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => changeTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.id ? 'bg-primary text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
             }`}
@@ -185,7 +206,7 @@ export default function Immobilisations() {
 
       {/* AMORTISSEMENTS */}
       {tab === 'amortissements' && (
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           <div className="card">
             <h3 className="text-sm font-bold text-neutral-700 mb-4">Évolution des dotations annuelles</h3>
             <ResponsiveContainer width="100%" height={250}>

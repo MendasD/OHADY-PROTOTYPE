@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, ChevronRight, ChevronDown, Plus, Download, Filter } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, Plus, Download } from 'lucide-react';
 
 interface Account { code: string; label: string; type: string; sens: 'D' | 'C'; nature: string; solde?: number; }
 interface AccountClass { id: string; code: string; label: string; color: string; accounts: Account[]; }
@@ -108,7 +108,7 @@ export default function PlanComptable() {
   const totalAccounts = planComptable.reduce((s, c) => s + c.accounts.length, 0);
 
   return (
-    <div className="space-y-5 max-w-screen-xl">
+    <div className="space-y-5 max-w-screen-xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Plan comptable SYSCOHADA</h1>

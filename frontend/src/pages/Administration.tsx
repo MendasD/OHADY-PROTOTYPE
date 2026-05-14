@@ -1,9 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Building2, Shield, UserCog, Bell, Database,
   ChevronRight, Check, Plus, Edit, Trash2, Eye,
   Key, Smartphone, AlertCircle, CheckCircle,
 } from 'lucide-react';
+
+type AdminTab = 'parametrage' | 'utilisateurs' | 'securite';
+const pathToTab: Record<string, AdminTab> = {
+  '/administration': 'parametrage',
+  '/utilisateurs': 'utilisateurs',
+  '/securite': 'securite',
+};
+const tabToPath: Record<AdminTab, string> = {
+  parametrage: '/administration',
+  utilisateurs: '/utilisateurs',
+  securite: '/securite',
+};
 
 const users = [
   { id: 'u1', name: 'Hermann Cakpo',    email: 'h.cakpo@ohady.sn',      role: 'DAF',              status: 'active',   twofa: true,  lastLogin: 'Maintenant' },
@@ -49,7 +62,19 @@ const paramSections = [
 ];
 
 export default function Administration() {
-  const [activeTab, setActiveTab] = useState<'parametrage' | 'utilisateurs' | 'securite'>('parametrage');
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<AdminTab>(pathToTab[pathname] ?? 'parametrage');
+
+  useEffect(() => {
+    const t = pathToTab[pathname];
+    if (t && t !== activeTab) setActiveTab(t);
+  }, [pathname, activeTab]);
+
+  const changeTab = (t: AdminTab) => {
+    setActiveTab(t);
+    if (tabToPath[t] !== pathname) navigate(tabToPath[t]);
+  };
 
   const statusStyle: Record<string, { badge: string; label: string }> = {
     active:   { badge: 'badge-green', label: 'Actif'     },
@@ -63,7 +88,7 @@ export default function Administration() {
   };
 
   return (
-    <div className="space-y-6 max-w-screen-xl">
+    <div className="space-y-6 max-w-screen-xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Administration</h1>
@@ -80,7 +105,7 @@ export default function Administration() {
         ].map(tab => {
           const Icon = tab.icon;
           return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
+            <button key={tab.id} onClick={() => changeTab(tab.id as AdminTab)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === tab.id ? 'bg-white text-neutral-800 shadow-card' : 'text-neutral-500 hover:text-neutral-700'
               }`}>
@@ -158,7 +183,7 @@ export default function Administration() {
       {/* Utilisateurs tab */}
       {activeTab === 'utilisateurs' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {[
               { label: 'Utilisateurs actifs', value: users.filter(u=>u.status==='active').length, color: 'text-success' },
               { label: 'Externes',            value: users.filter(u=>u.status==='external').length, color: 'text-secondary' },

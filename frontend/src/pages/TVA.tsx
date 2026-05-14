@@ -110,7 +110,7 @@ export default function TVA() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             {/* TVA collectée */}
             <div className="card">
               <h3 className="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">

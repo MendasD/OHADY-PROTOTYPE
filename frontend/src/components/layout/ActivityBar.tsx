@@ -1,20 +1,38 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Wallet, ShoppingCart, Package, BookOpen,
-  Users, Archive, Bot, Settings, PanelLeftClose, PanelLeftOpen,
-  Sparkles, LogOut,
+  Users, Archive, Bot, Settings, PanelLeftClose,
+  Sparkles, Percent, Lock,
 } from 'lucide-react';
 import { navModules } from '../../nav/navConfig';
 import { useSidebar } from '../../context/SidebarContext';
 
 const iconMap: Record<string, React.ElementType> = {
   LayoutDashboard, Wallet, ShoppingCart, Package, BookOpen,
-  Users, Archive, Bot, Settings,
+  Users, Archive, Bot, Settings, Percent, Lock,
 };
 
 export default function ActivityBar() {
-  const { activeModule, panelOpen, toggleModule, barVisible, setBarVisible, setIaOpen } = useSidebar();
+  const { activeModule, panelOpen, toggleModule, setActiveModule, setPanelOpen, barVisible, setBarVisible, setIaOpen } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleModuleClick = (moduleId: string) => {
+    const mod = navModules.find(m => m.id === moduleId);
+    if (!mod) return;
+    const alreadyInModule = mod.children.some(
+      c => location.pathname === c.path || location.pathname.startsWith(c.path + '/'),
+    );
+    if (alreadyInModule) {
+      // Same module — just toggle the panel
+      toggleModule(moduleId);
+    } else {
+      // Different module — navigate to its first child and ensure panel is open
+      setActiveModule(moduleId);
+      setPanelOpen(true);
+      navigate(mod.children[0].path);
+    }
+  };
 
   const isModuleActive = (moduleId: string) =>
     navModules.find(m => m.id === moduleId)
@@ -27,7 +45,7 @@ export default function ActivityBar() {
     <div
       className="fixed inset-y-0 left-0 z-40 flex flex-col items-center py-3 gap-1"
       style={{
-        width: 64,
+        width: 84,
         background: '#0F2537',
         borderRight: '1px solid rgba(255,255,255,0.06)',
         boxShadow: '2px 0 8px rgba(0,0,0,0.25)',
@@ -49,7 +67,7 @@ export default function ActivityBar() {
           return (
             <button
               key={mod.id}
-              onClick={() => toggleModule(mod.id)}
+              onClick={() => handleModuleClick(mod.id)}
               title={mod.label}
               className={`
                 relative w-full flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl
@@ -103,8 +121,8 @@ export default function ActivityBar() {
 
         {/* Collapse bar */}
         <button
-          onClick={() => setBarVisible(false)}
-          title="Masquer la barre"
+          onClick={() => { setBarVisible(false); setPanelOpen(false); }}
+          title="Masquer la barre latérale"
           className="w-full flex flex-col items-center justify-center py-2.5 rounded-xl hover:bg-white/8 transition-all border-0"
         >
           <PanelLeftClose size={16} className="text-white/30" />

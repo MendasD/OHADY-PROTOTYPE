@@ -78,7 +78,7 @@ export default function Relances() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'En cours de recouvrement', val: fmtXOF(montantTotal), color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'En contentieux', val: fmtXOF(enContentieux), color: 'text-red-600', bg: 'bg-red-50' },

@@ -1,10 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Package, ArrowUp, ArrowDown, ClipboardList, Plus, Search, AlertTriangle } from 'lucide-react';
+
+type StockTab = 'articles' | 'mouvements' | 'inventaire';
+const pathToTab: Record<string, StockTab> = {
+  '/articles': 'articles',
+  '/mouvements': 'mouvements',
+  '/inventaire': 'inventaire',
+};
+const tabToPath: Record<StockTab, string> = {
+  articles: '/articles',
+  mouvements: '/mouvements',
+  inventaire: '/inventaire',
+};
 
 const fmtXOF = (n: number) =>
   new Intl.NumberFormat('fr-FR').format(n) + ' XOF';
-
-type Tab = 'articles' | 'mouvements' | 'inventaire';
 
 const categories = ['Fournitures bureau', 'Matériel informatique', 'Consommables', 'Mobilier', 'Équipements divers'];
 
@@ -41,14 +52,26 @@ const inventaireData = [
 ];
 
 export default function Stocks() {
-  const [tab, setTab] = useState<Tab>('articles');
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<StockTab>(pathToTab[pathname] ?? 'articles');
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
 
+  useEffect(() => {
+    const t = pathToTab[pathname];
+    if (t && t !== tab) setTab(t);
+  }, [pathname, tab]);
+
+  const changeTab = (t: StockTab) => {
+    setTab(t);
+    if (tabToPath[t] !== pathname) navigate(tabToPath[t]);
+  };
+
   const tabs = [
-    { id: 'articles' as Tab, label: 'Articles & Catalogue', icon: <Package size={14} /> },
-    { id: 'mouvements' as Tab, label: 'Mouvements', icon: <ArrowUp size={14} /> },
-    { id: 'inventaire' as Tab, label: 'Inventaire physique', icon: <ClipboardList size={14} /> },
+    { id: 'articles' as StockTab, label: 'Articles & Catalogue', icon: <Package size={14} /> },
+    { id: 'mouvements' as StockTab, label: 'Mouvements', icon: <ArrowUp size={14} /> },
+    { id: 'inventaire' as StockTab, label: 'Inventaire physique', icon: <ClipboardList size={14} /> },
   ];
 
   const filteredArticles = articles.filter(a =>
@@ -73,7 +96,7 @@ export default function Stocks() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'Références actives', val: articles.length.toString(), icon: <Package size={18} />, color: 'text-blue-500', bg: 'bg-blue-50' },
           { label: 'Valeur totale stock', val: fmtXOF(totalValeur), icon: <Package size={18} />, color: 'text-green-600', bg: 'bg-green-50' },
@@ -95,7 +118,7 @@ export default function Stocks() {
         {tabs.map(t => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => changeTab(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.id ? 'bg-primary text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
             }`}

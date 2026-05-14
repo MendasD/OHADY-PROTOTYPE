@@ -56,7 +56,7 @@ export default function Avances() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'En attente validation', val: enAttente.length.toString(), sub: fmtXOF(totalEnAttente), color: 'text-amber-600', bg: 'bg-amber-50' },
           { label: 'Total déboursé (mai)', val: fmtXOF(totalMois), sub: `${demandes.length} demandes`, color: 'text-blue-600', bg: 'bg-blue-50' },

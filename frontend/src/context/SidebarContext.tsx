@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
+import { navModules } from '../nav/navConfig';
 
 interface SidebarContextValue {
   activeModule: string;
@@ -14,11 +16,32 @@ interface SidebarContextValue {
 
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
+function findModuleForPath(pathname: string): string | null {
+  for (const mod of navModules) {
+    for (const child of mod.children) {
+      if (pathname === child.path || pathname.startsWith(child.path + '/')) {
+        return mod.id;
+      }
+    }
+  }
+  return null;
+}
+
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [activeModule, setActiveModule] = useState('pilotage');
+  const location = useLocation();
+  const initialModule = findModuleForPath(location.pathname) ?? 'pilotage';
+  const [activeModule, setActiveModule] = useState(initialModule);
   const [panelOpen, setPanelOpen] = useState(true);
   const [barVisible, setBarVisible] = useState(true);
   const [iaOpen, setIaOpen] = useState(false);
+
+  // Sync activeModule with URL on each route change
+  useEffect(() => {
+    const moduleId = findModuleForPath(location.pathname);
+    if (moduleId && moduleId !== activeModule) {
+      setActiveModule(moduleId);
+    }
+  }, [location.pathname, activeModule]);
 
   const toggleModule = (id: string) => {
     if (activeModule === id) {

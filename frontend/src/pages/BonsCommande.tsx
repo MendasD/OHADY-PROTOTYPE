@@ -63,7 +63,7 @@ export default function BonsCommande() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'Total commandé (mai)', val: fmtXOF(totalCommandes), color: 'text-blue-600' },
           { label: 'Livré & réceptionné', val: fmtXOF(livres), color: 'text-green-600' },

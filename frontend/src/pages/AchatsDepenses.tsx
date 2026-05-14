@@ -46,7 +46,7 @@ export default function AchatsDepenses() {
     .reduce((s, e) => s + e.amount, 0);
 
   return (
-    <div className="space-y-6 max-w-screen-xl">
+    <div className="space-y-6 max-w-screen-xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -60,7 +60,7 @@ export default function AchatsDepenses() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'En attente d\'approbation',  value: pending,               unit: 'demandes', color: 'text-orange-500', bg: 'bg-orange-50' },
           { label: 'Montant en cours',           value: fmtXOF(totalPending),  unit: '',          color: 'text-secondary',   bg: 'bg-blue-50'   },

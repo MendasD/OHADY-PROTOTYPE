@@ -1,10 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Users, DollarSign, Calendar, Plus, Search, Download,
-  CheckCircle, Clock, AlertCircle, Eye, Edit, TrendingUp, User,
+  CheckCircle, AlertCircle, Eye, Edit,
 } from 'lucide-react';
 import { fmtXOF } from '../data/mockData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const pathToTab: Record<string, string> = {
+  '/employes': 'employes',
+  '/paie': 'paie',
+  '/conges': 'conges',
+  '/avances-rh': 'avances',
+};
+const tabToPath: Record<string, string> = Object.fromEntries(
+  Object.entries(pathToTab).map(([p, t]) => [t, p]),
+);
 
 const employees = [
   { id: 'e1', nom: 'Aminata Diallo',   poste: 'Comptable junior',   dept: 'Finance',     salaire: 450000,  anciennete: '2 ans',    statut: 'CDI',  conges: 12, absences: 1, avance: 0       },
@@ -29,8 +40,21 @@ const tabs = ['employes', 'paie', 'conges', 'avances'];
 const tabLabels: Record<string, string> = { employes: 'Employés', paie: 'Paie & Bulletins', conges: 'Congés & Absences', avances: 'Avances sur salaire' };
 
 export default function RH() {
-  const [activeTab, setActiveTab] = useState('employes');
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState(pathToTab[pathname] ?? 'employes');
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const t = pathToTab[pathname];
+    if (t && t !== activeTab) setActiveTab(t);
+  }, [pathname, activeTab]);
+
+  const changeTab = (t: string) => {
+    setActiveTab(t);
+    const targetPath = tabToPath[t];
+    if (targetPath && targetPath !== pathname) navigate(targetPath);
+  };
 
   const filtered = employees.filter(e =>
     e.nom.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,7 +65,7 @@ export default function RH() {
   const totalAvances = employees.reduce((s, e) => s + e.avance, 0);
 
   return (
-    <div className="space-y-5 max-w-screen-xl">
+    <div className="space-y-5 max-w-screen-xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">RH & Paie</h1>
@@ -75,7 +99,7 @@ export default function RH() {
       {/* Tabs */}
       <div className="flex gap-1 bg-neutral-100 p-1 rounded-xl w-fit">
         {tabs.map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
+          <button key={tab} onClick={() => changeTab(tab)}
             className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border-0 ${activeTab === tab ? 'bg-white text-neutral-800 shadow-card' : 'text-neutral-500 hover:text-neutral-700 bg-transparent'}`}>
             {tabLabels[tab]}
           </button>

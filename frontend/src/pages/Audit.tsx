@@ -75,7 +75,7 @@ export default function Audit() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'Actions enregistrées (24h)', val: logs.length.toString(), color: 'text-blue-600' },
           { label: 'Utilisateurs actifs', val: [...new Set(logs.filter(l => l.utilisateur !== 'Système').map(l => l.utilisateur))].length.toString(), color: 'text-green-600' },

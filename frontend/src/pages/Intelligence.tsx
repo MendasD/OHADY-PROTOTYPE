@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Send, Sparkles, Scan, AlertTriangle, RefreshCw,
   FileText, Upload, CheckCircle, Eye, X, Loader2,
@@ -6,6 +7,18 @@ import {
 } from 'lucide-react';
 import { chatMessages } from '../data/mockData';
 import type { ChatMessage } from '../types';
+
+type IntelTab = 'chat' | 'ocr' | 'anomalies';
+const pathToTab: Record<string, IntelTab> = {
+  '/intelligence': 'chat',
+  '/ocr': 'ocr',
+  '/anomalies': 'anomalies',
+};
+const tabToPath: Record<IntelTab, string> = {
+  chat: '/intelligence',
+  ocr: '/ocr',
+  anomalies: '/anomalies',
+};
 
 const mockAnomalies = [
   { id: 'an1', type: 'Double saisie probable', severity: 'error',   desc: 'Écriture BQ-2026-0812 et BQ-2026-0819 semblent identiques (même montant, même tiers, même date)', account: '41100 — SONES' },
@@ -44,7 +57,19 @@ function Markdown({ text }: { text: string }) {
 }
 
 export default function Intelligence() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'ocr' | 'anomalies'>('chat');
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<IntelTab>(pathToTab[pathname] ?? 'chat');
+
+  useEffect(() => {
+    const t = pathToTab[pathname];
+    if (t && t !== activeTab) setActiveTab(t);
+  }, [pathname, activeTab]);
+
+  const changeTab = (t: IntelTab) => {
+    setActiveTab(t);
+    if (tabToPath[t] !== pathname) navigate(tabToPath[t]);
+  };
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -88,7 +113,7 @@ export default function Intelligence() {
   ];
 
   return (
-    <div className="space-y-4 max-w-screen-xl">
+    <div className="space-y-4 max-w-screen-xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title flex items-center gap-2">
@@ -107,7 +132,7 @@ export default function Intelligence() {
         ].map(tab => {
           const Icon = tab.icon;
           return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
+            <button key={tab.id} onClick={() => changeTab(tab.id as IntelTab)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === tab.id ? 'bg-white text-neutral-800 shadow-card' : 'text-neutral-500 hover:text-neutral-700'
               }`}>

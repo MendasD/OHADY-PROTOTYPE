@@ -55,7 +55,7 @@ export default function Comptabilite() {
   const checkPct = Math.round(checkDone / checklistItems.length * 100);
 
   return (
-    <div className="space-y-6 max-w-screen-xl">
+    <div className="space-y-6 max-w-screen-xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -91,7 +91,7 @@ export default function Comptabilite() {
       {activeTab === 'journal' && (
         <>
           {/* Stats strip */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {[
               { label: 'Écritures validées',   value: journalEntries.filter(e=>e.status==='validated').length, color: 'text-success' },
               { label: 'À valider',            value: journalEntries.filter(e=>e.status==='submitted').length, color: 'text-orange-500' },

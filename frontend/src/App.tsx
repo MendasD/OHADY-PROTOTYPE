@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Budget from './pages/Budget';
@@ -24,20 +24,32 @@ import Suspens from './pages/Suspens';
 import TVA from './pages/TVA';
 import Audit from './pages/Audit';
 import Integrations from './pages/Integrations';
+import Rapprochement from './pages/Rapprochement';
+import Prevision from './pages/Prevision';
+import Recouvrement from './pages/Recouvrement';
+import Saisie from './pages/Saisie';
+import GrandLivre from './pages/GrandLivre';
+import Balance from './pages/Balance';
+import Lettrage from './pages/Lettrage';
+import Retenues from './pages/Retenues';
+import Declarations from './pages/Declarations';
+import FactElec from './pages/FactElec';
+import ClotureMensuelle from './pages/ClotureMensuelle';
+import ClotureAnnuelle from './pages/ClotureAnnuelle';
+import Liasses from './pages/Liasses';
+import Catalogue from './pages/Catalogue';
+import AchatsInbox from './pages/AchatsInbox';
+import FicheTier from './pages/FicheTier';
+import Analytique from './pages/Analytique';
+import PilotageTDB from './pages/PilotageTDB';
+import Parametres from './pages/Parametres';
+import Cheques from './pages/Cheques';
+import PortailEC from './pages/PortailEC';
+import Consolidation from './pages/Consolidation';
+import Migration from './pages/Migration';
+import FluxTresorerie from './pages/FluxTresorerie';
+import PlanEncaissement from './pages/PlanEncaissement';
 
-const Placeholder = ({ title }: { title: string }) => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="text-center">
-      <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-        <span className="text-2xl">🚧</span>
-      </div>
-      <h2 className="text-lg font-semibold text-neutral-700">{title}</h2>
-      <p className="text-neutral-400 mt-1.5 text-sm max-w-xs mx-auto">
-        Ce module sera disponible dans une prochaine itération du prototype.
-      </p>
-    </div>
-  </div>
-);
 
 export default function App() {
   return (
@@ -49,58 +61,83 @@ export default function App() {
           {/* Pilotage */}
           <Route path="dashboard"        element={<Dashboard />} />
           <Route path="budget"           element={<Budget />} />
+          <Route path="analytique"       element={<Analytique />} />
           <Route path="modelisation"     element={<Modelisation />} />
-          <Route path="etats-financiers" element={<EtatsFinanciers />} />
+          <Route path="consolidation"    element={<Consolidation />} />
+          <Route path="portail-ec"       element={<PortailEC />} />
+          <Route path="pilotage"         element={<PilotageTDB />} />
+
+          {/* Comptabilité */}
+          <Route path="saisie"           element={<Saisie />} />
+          <Route path="comptabilite"     element={<Comptabilite />} />
+          <Route path="grand-livre"      element={<GrandLivre />} />
+          <Route path="balance"          element={<Balance />} />
+          <Route path="lettrage"         element={<Lettrage />} />
+          <Route path="plan-comptable"   element={<PlanComptable />} />
+          <Route path="suspens"          element={<Suspens />} />
 
           {/* Trésorerie */}
           <Route path="tresorerie"       element={<Tresorerie />} />
-          <Route path="rapprochement"    element={<Tresorerie />} />
-          <Route path="prevision"        element={<Tresorerie />} />
+          <Route path="rapprochement"    element={<Rapprochement />} />
+          <Route path="cheques"          element={<Cheques />} />
+          <Route path="prevision"        element={<Prevision />} />
           <Route path="caisse"           element={<Caisse />} />
 
-          {/* Ventes & Clients */}
+          {/* Ventes */}
           <Route path="ventes"           element={<VentesClients />} />
           <Route path="devis"            element={<Devis />} />
-          <Route path="recouvrement"     element={<VentesClients />} />
+          <Route path="recouvrement"     element={<Recouvrement />} />
+          <Route path="plans-encaissement" element={<PlanEncaissement />} />
+          <Route path="catalogue"        element={<Catalogue />} />
           <Route path="relances"         element={<Relances />} />
 
-          {/* Achats & Dépenses */}
-          <Route path="achats"           element={<AchatsDepenses />} />
-          <Route path="bons-commande"    element={<BonsCommande />} />
+          {/* Achats */}
+          <Route path="achats-inbox"     element={<AchatsInbox />} />
           <Route path="fournisseurs"     element={<Fournisseurs />} />
+          <Route path="bons-commande"    element={<BonsCommande />} />
+          <Route path="achats"           element={<AchatsDepenses />} />
           <Route path="avances"          element={<Avances />} />
 
-          {/* Comptabilité */}
-          <Route path="comptabilite"     element={<Comptabilite />} />
-          <Route path="plan-comptable"   element={<PlanComptable />} />
-          <Route path="cloture"          element={<Placeholder title="Clôture mensuelle" />} />
-          <Route path="suspens"          element={<Suspens />} />
-          <Route path="tva"              element={<TVA />} />
-
-          {/* RH & Paie */}
+          {/* RH & Tiers */}
           <Route path="employes"         element={<RH />} />
           <Route path="paie"             element={<RH />} />
           <Route path="conges"           element={<RH />} />
           <Route path="avances-rh"       element={<RH />} />
+          <Route path="tiers"            element={<FicheTier />} />
 
-          {/* Stocks & Immobilisations */}
+          {/* Stocks & Immo */}
           <Route path="articles"         element={<Stocks />} />
           <Route path="mouvements"       element={<Stocks />} />
           <Route path="inventaire"       element={<Stocks />} />
           <Route path="immobilisations"  element={<Immobilisations />} />
           <Route path="amortissements"   element={<Immobilisations />} />
 
+          {/* Fiscal */}
+          <Route path="tva"              element={<TVA />} />
+          <Route path="retenues"         element={<Retenues />} />
+          <Route path="declarations"     element={<Declarations />} />
+          <Route path="fact-elec"        element={<FactElec />} />
+
+          {/* Clôture */}
+          <Route path="cloture-m"        element={<ClotureMensuelle />} />
+          <Route path="cloture-a"        element={<ClotureAnnuelle />} />
+          <Route path="etats-financiers" element={<EtatsFinanciers />} />
+          <Route path="flux-tresorerie"  element={<FluxTresorerie />} />
+          <Route path="liasses"          element={<Liasses />} />
+
           {/* Intelligence IA */}
           <Route path="intelligence"     element={<Intelligence />} />
           <Route path="ocr"              element={<Intelligence />} />
           <Route path="anomalies"        element={<Intelligence />} />
 
-          {/* Administration */}
+          {/* Paramètres */}
+          <Route path="parametres"       element={<Parametres />} />
           <Route path="administration"   element={<Administration />} />
           <Route path="utilisateurs"     element={<Administration />} />
           <Route path="securite"         element={<Administration />} />
           <Route path="audit"            element={<Audit />} />
           <Route path="integrations"     element={<Integrations />} />
+          <Route path="migration"        element={<Migration />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -71,7 +71,7 @@ export default function Integrations() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
           { label: 'Intégrations disponibles', val: integrations.length.toString(), color: 'text-blue-600' },
           { label: 'Connectées & actives', val: connectees.toString(), color: 'text-green-600' },

@@ -115,7 +115,7 @@ export default function EtatsFinanciers() {
 
       {/* BILAN */}
       {tab === 'bilan' && (
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           {/* ACTIF */}
           <div className="card space-y-4">
             <h2 className="text-sm font-bold text-neutral-700 uppercase tracking-wide">Actif</h2>
@@ -246,7 +246,7 @@ export default function EtatsFinanciers() {
 
       {/* COMPTE DE RÉSULTAT */}
       {tab === 'cpc' && (
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           {/* Produits */}
           <div className="card">
             <div className="flex items-center gap-2 mb-4">

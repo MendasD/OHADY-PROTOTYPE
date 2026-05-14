@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  Plus, ArrowUpCircle, ArrowDownCircle, CheckCircle, Clock,
-  Printer, Download, AlertTriangle, Banknote, RefreshCw,
+  ArrowUpCircle, ArrowDownCircle, CheckCircle,
+  Printer, Download, AlertTriangle, Banknote,
 } from 'lucide-react';
 import { fmtXOF } from '../data/mockData';
 
@@ -43,7 +43,7 @@ export default function Caisse() {
   const ecart = soldeActuel - totalBillets;
 
   return (
-    <div className="space-y-5 max-w-screen-xl">
+    <div className="space-y-5 max-w-screen-xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Caisse principale</h1>
