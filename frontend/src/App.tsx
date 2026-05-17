@@ -44,6 +44,12 @@ import Analytique from './pages/Analytique';
 import PilotageTDB from './pages/PilotageTDB';
 import Parametres from './pages/Parametres';
 import Cheques from './pages/Cheques';
+import Notifications from './pages/Notifications';
+import BonsLivraison from './pages/BonsLivraison';
+import Avoirs from './pages/Avoirs';
+import PipelineCommercial from './pages/PipelineCommercial';
+import BonsReception from './pages/BonsReception';
+import CessionsActif from './pages/CessionsActif';
 import PortailEC from './pages/PortailEC';
 import Consolidation from './pages/Consolidation';
 import Migration from './pages/Migration';
@@ -138,6 +144,17 @@ export default function App() {
           <Route path="audit"            element={<Audit />} />
           <Route path="integrations"     element={<Integrations />} />
           <Route path="migration"        element={<Migration />} />
+
+          {/* Transverse */}
+          <Route path="notifications"    element={<Notifications />} />
+
+          {/* Pack 4 — nouvelles pages métier */}
+          <Route path="bons-livraison"      element={<BonsLivraison />} />
+          <Route path="avoirs-clients"      element={<Avoirs />} />
+          <Route path="avoirs-fournisseurs" element={<Avoirs />} />
+          <Route path="pipeline"            element={<PipelineCommercial />} />
+          <Route path="bons-reception"      element={<BonsReception />} />
+          <Route path="cessions-actif"      element={<CessionsActif />} />
         </Route>
       </Routes>
     </BrowserRouter>

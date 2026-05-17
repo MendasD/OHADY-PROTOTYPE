@@ -17,6 +17,8 @@ export interface Persona {
   primaryKpis: string[];
   /** Couleur secondaire pour bandes de hero */
   accent: string;
+  /** IDs des modules visibles dans la sidebar pour ce persona ('all' = tous) */
+  allowedModules: string[] | 'all';
 }
 
 export const PERSONAS: Persona[] = [
@@ -32,6 +34,7 @@ export const PERSONAS: Persona[] = [
     description: 'Vision pilotage : trésorerie, budget, projection sur 5 ans, alertes business.',
     primaryModules: ['pilotage', 'tresorerie', 'cloture'],
     primaryKpis: ['ca', 'tresorerie', 'resultat', 'budget'],
+    allowedModules: 'all',
   },
   {
     id: 'elis',
@@ -45,6 +48,7 @@ export const PERSONAS: Persona[] = [
     description: 'Modélisation, scénarios, budgets, ratios, analytique multi-axes.',
     primaryModules: ['pilotage', 'cloture', 'comptabilite'],
     primaryKpis: ['ca', 'marge', 'ebitda', 'scenarios'],
+    allowedModules: ['pilotage', 'comptabilite', 'tresorerie', 'cloture', 'fiscal'],
   },
   {
     id: 'doudou',
@@ -58,6 +62,7 @@ export const PERSONAS: Persona[] = [
     description: 'Contrôle, validation, clôture, supervision junior, anomalies.',
     primaryModules: ['comptabilite', 'cloture', 'fiscal'],
     primaryKpis: ['ecritures', 'anomalies', 'suspens', 'cloture'],
+    allowedModules: 'all',
   },
   {
     id: 'awa',
@@ -71,6 +76,7 @@ export const PERSONAS: Persona[] = [
     description: 'Saisie quotidienne, rapprochement, import relevés, écritures à valider.',
     primaryModules: ['comptabilite', 'tresorerie', 'achats'],
     primaryKpis: ['saisies', 'rappro', 'pile_fournisseurs', 'taches'],
+    allowedModules: ['comptabilite', 'tresorerie', 'achats', 'ventes'],
   },
   {
     id: 'issa',
@@ -84,6 +90,7 @@ export const PERSONAS: Persona[] = [
     description: 'Revue dossiers, conformité SYSCOHADA, commentaires, validation finale.',
     primaryModules: ['comptabilite', 'cloture', 'fiscal'],
     primaryKpis: ['dossiers', 'anomalies', 'cloture', 'liasses'],
+    allowedModules: ['pilotage', 'comptabilite', 'cloture', 'fiscal'],
   },
 ];
 

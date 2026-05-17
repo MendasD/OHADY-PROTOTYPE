@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Bell, ChevronDown, Settings, CalendarDays, PanelLeftOpen, Check, UserCircle2 } from 'lucide-react';
 import { alerts } from '../../data/mockData';
 import { navModules } from '../../nav/navConfig';
 import { useSidebar } from '../../context/SidebarContext';
 import { usePersona } from '../../context/PersonaContext';
+import CommandPalette from '../ui/CommandPalette';
 
 function getBreadcrumb(pathname: string): string[] {
   for (const mod of navModules) {
@@ -19,10 +20,12 @@ function getBreadcrumb(pathname: string): string[] {
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { barVisible, setBarVisible, setPanelOpen, panelOpen } = useSidebar();
   const { persona, setPersona, personas } = usePersona();
   const [showNotifs, setShowNotifs] = useState(false);
   const [showPersona, setShowPersona] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const personaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,6 +34,18 @@ export default function Header() {
     };
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
+  }, []);
+
+  // Raccourci global ⌘K / Ctrl+K
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   const crumbs = getBreadcrumb(location.pathname);
@@ -83,16 +98,15 @@ export default function Header() {
         ))}
       </nav>
 
-      {/* Search */}
-      <div className="relative hidden md:block">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-        <input
-          type="text"
-          placeholder="Rechercher..."
-          className="pl-9 pr-4 py-1.5 text-sm rounded-lg border border-neutral-200 bg-neutral-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-all w-64 placeholder:text-neutral-400"
-        />
-        <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-neutral-400 font-mono bg-neutral-100 px-1.5 py-0.5 rounded hidden lg:block">⌘K</kbd>
-      </div>
+      {/* Command palette trigger */}
+      <button
+        onClick={() => setCmdOpen(true)}
+        className="hidden md:flex items-center gap-2 pl-3 pr-2 py-1.5 text-sm rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-white hover:border-secondary/40 transition-all w-64 group"
+      >
+        <Search size={13} className="text-neutral-400 group-hover:text-secondary" />
+        <span className="text-neutral-400 flex-1 text-left">Rechercher ou agir…</span>
+        <kbd className="text-[10px] text-neutral-400 font-mono bg-white border border-neutral-200 px-1.5 py-0.5 rounded">⌘K</kbd>
+      </button>
 
       {/* Fiscal year */}
       <button className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 transition-all text-xs">
@@ -135,7 +149,12 @@ export default function Header() {
               ))}
             </div>
             <div className="px-4 py-2.5 border-t border-neutral-100 text-center">
-              <button className="text-xs text-secondary font-medium hover:underline">Voir toutes les notifications</button>
+              <button
+                onClick={() => { setShowNotifs(false); navigate('/notifications'); }}
+                className="text-xs text-secondary font-medium hover:underline"
+              >
+                Voir toutes les notifications →
+              </button>
             </div>
           </div>
         )}
@@ -224,6 +243,8 @@ export default function Header() {
           </div>
         )}
       </div>
+
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </header>
   );
 }
