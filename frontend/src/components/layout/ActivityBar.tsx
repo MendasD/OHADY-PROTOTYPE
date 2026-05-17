@@ -4,7 +4,7 @@ import {
   Users, Archive, Bot, Settings, PanelLeftClose,
   Sparkles, Percent, Lock,
 } from 'lucide-react';
-import { navModules, universList } from '../../nav/navConfig';
+import { navModules } from '../../nav/navConfig';
 import { useSidebar } from '../../context/SidebarContext';
 import { usePersona } from '../../context/PersonaContext';
 
@@ -64,67 +64,50 @@ export default function ActivityBar() {
         <span className="text-white font-black text-lg">O</span>
       </div>
 
-      {/* Module icons (filtrés selon persona + groupés par univers) */}
+      {/* Module icons (filtrés selon persona, liste plate, Pilotage en tête) */}
       <nav className="flex-1 flex flex-col items-center gap-0.5 w-full px-2 overflow-y-auto">
-        {universList.map(univers => {
-          const modulesOfUnivers = visibleModules.filter(m => m.univers === univers.id);
-          if (modulesOfUnivers.length === 0) return null;
-
+        {visibleModules.map(mod => {
+          const Icon = iconMap[mod.icon] || LayoutDashboard;
+          const isActive = isModuleActive(mod.id);
+          const isSelected = activeModule === mod.id && panelOpen;
           return (
-            <div key={univers.id} className="w-full">
-              {/* Séparateur visuel d'univers */}
-              <div
-                className="text-[8px] uppercase tracking-widest text-white/25 font-bold text-center my-1.5 pt-2 border-t border-white/5 first:border-0 first:pt-0"
-                title={univers.label}
+            <button
+              key={mod.id}
+              onClick={() => handleModuleClick(mod.id)}
+              title={mod.label}
+              className={`
+                relative w-full flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl
+                transition-all duration-150 group cursor-pointer border-0
+                ${isSelected
+                  ? 'bg-white/15'
+                  : isActive
+                    ? 'bg-white/10'
+                    : 'hover:bg-white/8'
+                }
+              `}
+            >
+              {(isActive || isSelected) && (
+                <div
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full"
+                  style={{ background: mod.accent }}
+                />
+              )}
+              <Icon
+                size={18}
+                style={{ color: isSelected ? mod.accent : isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)' }}
+                className="transition-colors"
+              />
+              <span
+                className="text-[9px] font-medium leading-none text-center px-1 transition-colors"
+                style={{
+                  color: isSelected ? 'rgba(255,255,255,0.95)'
+                    : isActive ? 'rgba(255,255,255,0.75)'
+                    : 'rgba(255,255,255,0.35)',
+                }}
               >
-                {univers.label.split(' ')[0].slice(0, 6)}
-              </div>
-              {modulesOfUnivers.map(mod => {
-                const Icon = iconMap[mod.icon] || LayoutDashboard;
-                const isActive = isModuleActive(mod.id);
-                const isSelected = activeModule === mod.id && panelOpen;
-                return (
-                  <button
-                    key={mod.id}
-                    onClick={() => handleModuleClick(mod.id)}
-                    title={mod.label}
-                    className={`
-                      relative w-full flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl
-                      transition-all duration-150 group cursor-pointer border-0
-                      ${isSelected
-                        ? 'bg-white/15'
-                        : isActive
-                          ? 'bg-white/10'
-                          : 'hover:bg-white/8'
-                      }
-                    `}
-                  >
-                    {/* Active indicator */}
-                    {(isActive || isSelected) && (
-                      <div
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full"
-                        style={{ background: mod.accent }}
-                      />
-                    )}
-                    <Icon
-                      size={18}
-                      style={{ color: isSelected ? mod.accent : isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)' }}
-                      className="transition-colors"
-                    />
-                    <span
-                      className="text-[9px] font-medium leading-none text-center px-1 transition-colors"
-                      style={{
-                        color: isSelected ? 'rgba(255,255,255,0.95)'
-                          : isActive ? 'rgba(255,255,255,0.75)'
-                          : 'rgba(255,255,255,0.35)',
-                      }}
-                    >
-                      {mod.label.split(' ')[0]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                {mod.label.split(' ')[0]}
+              </span>
+            </button>
           );
         })}
       </nav>
